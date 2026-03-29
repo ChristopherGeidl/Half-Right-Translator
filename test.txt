@@ -1,0 +1,12 @@
+
+set_name: test1
+
+[cards]
+[[front]hanzi | [back]pinyin | [back]definition]
+学习 | xué xí | to study
+谢谢 | xiè xie |thank you
+
+[writing]
+[prompt | write]
+    xué xí - to study | 学习
+    xiè xie - thank you | 谢谢    

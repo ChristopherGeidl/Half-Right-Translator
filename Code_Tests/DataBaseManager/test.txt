@@ -1,0 +1,7 @@
+
+        set_name: test3
+
+        [writing]
+        [prompt | write]
+        b1 | b2 | b3
+        
