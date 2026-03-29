@@ -147,7 +147,22 @@ class App(ctk.CTk):
             print(f"Error importing file: {e}")
             messagebox.showerror("Import Error", str(e))
     def export_file(self, foldername, setname):
-        pass
+        initial_name = f"{foldername} - {setname}.txt"
+        file_path = filedialog.asksaveasfilename(
+            title="Export Set",
+            defaultextension=".txt",
+            initialfile=initial_name,
+            filetypes=[("Text Files", "*.txt")]
+        )
+
+        if not file_path:
+            return # User canceled
+
+        # try:
+        self.db.exportTXT(foldername, setname, file_path)
+        messagebox.showinfo("Export Successful", f"Saved {setname} to:\n{file_path}")
+        # except Exception as e:
+        #     messagebox.showerror("Export Error", f"Could not export file: {e}")
     def load_folder(self, foldername):
         self.back_btn.configure(command=lambda: self.refresh_folder_list())
         self.label.configure(text=f"{foldername}")  

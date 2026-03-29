@@ -163,6 +163,45 @@ class DataBaseManager:
         
         self.conn.commit()
         print(f"Successfully imported '{set_name}' into {self.dbPath}.")
+    def exportTXT(self, foldername, setname, exportPath):
+        with open(exportPath, "w", encoding="utf-8") as f:
+            f.write(f"set_name: {setname}\n")
+
+            cardGroups = self.getCardGroupNames(foldername, setname)
+            for g in cardGroups:
+                f.write(f"\ncards: {g}\n")
+                
+                last_header_str = "" 
+                cardIDs = self.getCardIDsByGroup(foldername, setname, g)
+                for id in cardIDs:
+                    card = self.getCardByID(id)
+                    new_cols = []
+                    card_data = []
+
+                    for key, val in card["front"].items():
+                        new_cols.append(f"[front]{key}")
+                        card_data.append(str(val))
+                    for key, val in card["back"].items():
+                        new_cols.append(f"[back]{key}")
+                        card_data.append(str(val))
+
+                    current_header_str = f"[{' | '.join(new_cols)}]"
+                    if last_header_str != current_header_str:
+                        f.write(f"{current_header_str}\n")
+                        last_header_str = current_header_str
+                    
+                    f.write(f"{' | '.join(card_data)}\n")
+            
+            writingGroups = self.getWritingGroupNames(foldername, setname)
+            for g in writingGroups:
+                f.write(f"\nwriting: {g}\n")
+                f.write("[prompt | write]\n")
+                
+                writingIDs = self.getWritingIDsByGroup(foldername, setname, g)
+                for id in writingIDs:
+                    writing = self.getWritingByID(id)
+                    f.write(f"{writing['prompt']} | {writing['write']}\n")
+                    
     def addFolder(self, foldername):
         self.c.execute("INSERT OR IGNORE INTO folders (name) VALUES (?)", (foldername,))
         self.conn.commit()
@@ -245,7 +284,7 @@ class DataBaseManager:
     def getWritingByID(self, writing_id):
         self.c.execute("SELECT prompt, write FROM writing WHERE id = ?", (writing_id,))
         row = self.c.fetchone()
-        return {"front": row[0], "back": row[1]}
+        return {"prompt": row[0], "write": row[1]}
     def close(self):
         self.conn.close()
 
