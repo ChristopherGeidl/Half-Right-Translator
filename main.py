@@ -1,17 +1,86 @@
+from reader import Reader
 import sys
 import os
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QScrollArea, QFrame, QInputDialog,
-                             QMessageBox, QFileDialog, QLineEdit)
+                             QMessageBox, QFileDialog)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
 from DataBaseManager import DataBaseManager
+from PyQt6.QtGui import QPainter, QPen, QImage, QColor
+from PyQt6.QtCore import QPoint
+import cv2
+import numpy as np
+
+class DrawingCanvas(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_StaticContents)
+        self.drawing = False
+        self.setStyle(self.style())
+        self.last_point = QPoint()
+        self.image = QImage(self.size(), QImage.Format.Format_RGB32)
+        self.image.fill(Qt.GlobalColor.white)
+        self.current_thickness = 12
+    def paintEvent(self, event):
+        canvas_painter = QPainter(self)
+        canvas_painter.drawImage(self.rect(), self.image, self.image.rect())
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.last_point = event.position().toPoint()
+            self.drawing = True
+    def mouseMoveEvent(self, event):
+        if (event.buttons() & Qt.MouseButton.LeftButton) and self.drawing:
+            new_point = event.position().toPoint()
+            
+            # 1. Math: Calculate smooth thickness
+            distance = (new_point - self.last_point).manhattanLength()
+            target = max(10, min(18, 20 - distance))
+            lerp_factor = 0.1 
+            self.current_thickness += (target - self.current_thickness) * lerp_factor
+    
+            # 2. Drawing: Use ONE painter
+            painter = QPainter(self.image)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            
+            # Use int() for the thickness to avoid type errors
+            pen = QPen(Qt.GlobalColor.black, int(self.current_thickness), 
+                       Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+            painter.setPen(pen)
+            
+            painter.drawLine(self.last_point, new_point)
+            
+            # 3. Cleanup
+            painter.end() # Explicitly end the painter (Good practice)
+            self.last_point = new_point
+            self.update()
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.drawing = False
+    def resizeEvent(self, event):
+        # Handle window resizing so the drawing doesn't disappear
+        if self.width() > self.image.width() or self.height() > self.image.height():
+            new_image = QImage(self.size(), QImage.Format.Format_RGB32)
+            new_image.fill(Qt.GlobalColor.white)
+            painter = QPainter(new_image)
+            painter.drawImage(QPoint(0, 0), self.image)
+            self.image = new_image
+    def downloadIMG(self, filename):
+        ptr = self.image.bits()
+        ptr.setsize(self.image.sizeInBytes())
+        arr = np.frombuffer(ptr, np.uint8).reshape(self.image.height(), self.image.width(), 4)
+        img_bgr = cv2.cvtColor(arr, cv2.COLOR_BGRA2BGR)
+        blurred_img = cv2.GaussianBlur(img_bgr, (3, 3), 0)
+        cv2.imwrite(filename, blurred_img)
+    def clear(self):
+        self.image.fill(Qt.GlobalColor.white)
+        self.update()
 
 class HRT(QMainWindow):
     def __init__(self, width, height):
         super().__init__()
 
         self.db = DataBaseManager("HRT.db")
+        self.reader = Reader()
         self.setWindowTitle("Half Right Translator")
         self.resize(width, height)
 
@@ -302,7 +371,7 @@ class HRT(QMainWindow):
             next_btn = QPushButton("Next →")
             next_btn.clicked.connect(lambda _, i=(index+1), f=flipped: self.load_card(foldername, setname, groupname, i, f, reversed))
             self.footer_layout.addWidget(next_btn)
-    def load_writing(self, foldername, setname, groupname):
+    def load_writing(self, foldername, setname, groupname, index=0):
         try:
             self.back_btn.clicked.disconnect()
         except TypeError:
@@ -320,33 +389,73 @@ class HRT(QMainWindow):
             self.scroll_layout.addWidget(empty_label)
             return
 
-        writing_data = self.db.getWritingByID(writingIDs[0])
+        writing_data = self.db.getWritingByID(writingIDs[index])
 
         writing_container = QFrame()
         writing_container.setFrameShape(QFrame.Shape.StyledPanel)
-        writing_container.setStyleSheet("background-color: #333; border-radius: 10px; padding: 20px;")
         
         writing_layout = QVBoxLayout(writing_container)
 
-        prompt_label = QLabel(f"Prompt:\n{writing_data['prompt']}")
+        prompt_label = QLabel(f"{writing_data['prompt']}")
         prompt_label.setWordWrap(True)
         prompt_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        self.answer_input = QLineEdit()
-        self.answer_input.setPlaceholderText("Type your answer here...")
-
         writing_layout.addWidget(prompt_label)
-        writing_layout.addWidget(self.answer_input)
+
+        self.canvas = DrawingCanvas()
+        writing_layout.addWidget(self.canvas)
         
         self.scroll_layout.addWidget(writing_container)
 
+        clear_btn = QPushButton("Clear")
+        clear_btn.clicked.connect(lambda: self.canvas.clear())
+        self.footer_layout.addWidget(clear_btn)
+
         check_btn = QPushButton("Check Answer")
-        
-        check_btn.clicked.connect(lambda: self.check_writing_answer(writing_data['write']))
-        
+        check_btn.clicked.connect(lambda: self.writing_result(foldername, setname, groupname, index, writing_data))
         self.footer_layout.addWidget(check_btn)
 
-        next_btn = QPushButton("Next Exercise →")
+        next_btn = QPushButton("Next →")
+        next_btn.clicked.connect(lambda _, i=(index+1): self.load_writing(foldername, setname, groupname, i))
+        self.footer_layout.addWidget(next_btn)
+    def writing_result(self, foldername, setname, groupname, index, writing):
+        try:
+            self.back_btn.clicked.disconnect()
+        except TypeError:
+            pass
+        self.back_btn.clicked.connect(lambda: self.load_set(foldername, setname))
+        self.label.setText(f"{groupname}: Writing Mode")
+        print(f"Checking: {setname} writing group: {groupname}")
+        self.delete_widgets()
+
+        writing_container = QFrame()
+        writing_container.setFrameShape(QFrame.Shape.StyledPanel)
+        
+        writing_layout = QVBoxLayout(writing_container)
+
+        self.canvas.downloadIMG("writing.png")
+        is_correct, full_detected_text, avg_confidence = self.reader.verify_text("writing.png", writing['write'])
+
+
+        if(is_correct):
+            correct_label = QLabel("Correct")
+        else:
+            correct_label = QLabel("Incorrect")
+        correct_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        writing_layout.addWidget(correct_label)
+
+        prompt_label = QLabel(f"Prompt: {writing['prompt']}\nYour Answer: {full_detected_text}\nCorrect Answer: {writing['write']}\n")
+        prompt_label.setWordWrap(True)
+        prompt_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        writing_layout.addWidget(prompt_label)
+        
+        self.scroll_layout.addWidget(writing_container)
+
+        retry_btn = QPushButton("Try Again")
+        retry_btn.clicked.connect(lambda: self.load_writing(foldername, setname, groupname, index))
+        self.footer_layout.addWidget(retry_btn)
+
+        next_btn = QPushButton("Next →")
+        next_btn.clicked.connect(lambda _, i=(index+1): self.load_writing(foldername, setname, groupname, i))
         self.footer_layout.addWidget(next_btn)
     def load_test(self, foldername, setname):
         try:

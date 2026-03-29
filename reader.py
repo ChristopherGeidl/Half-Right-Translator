@@ -19,8 +19,6 @@ class Reader:
         total_confidence = 0
         
         for (bbox, text, prob) in result:
-            if(prob <= 0.3):
-                continue
             full_detected_text += text.replace(" ", "")
             total_confidence += prob
         

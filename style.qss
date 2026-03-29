@@ -4,6 +4,7 @@
     font-size: 16px;
     background-color: var(--black);
     color: var(--white);
+    border-width: 0px;
 }
 
 QScrollArea {
@@ -52,4 +53,9 @@ QPushButton:hover {
     color: var(--black);
     font-weight: bold;
     font-size: 30px;
+}
+
+/* ---    Writing    --- */
+DrawingCanvas {
+    min-height: 400px;
 }
