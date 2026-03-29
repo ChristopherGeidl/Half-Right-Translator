@@ -158,11 +158,11 @@ class App(ctk.CTk):
         if not file_path:
             return # User canceled
 
-        # try:
-        self.db.exportTXT(foldername, setname, file_path)
-        messagebox.showinfo("Export Successful", f"Saved {setname} to:\n{file_path}")
-        # except Exception as e:
-        #     messagebox.showerror("Export Error", f"Could not export file: {e}")
+        try:
+            self.db.exportTXT(foldername, setname, file_path)
+            messagebox.showinfo("Export Successful", f"Saved {setname} to:\n{file_path}")
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Could not export file: {e}")
     def load_folder(self, foldername):
         self.back_btn.configure(command=lambda: self.refresh_folder_list())
         self.label.configure(text=f"{foldername}")  

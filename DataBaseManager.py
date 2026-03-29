@@ -200,8 +200,7 @@ class DataBaseManager:
                 writingIDs = self.getWritingIDsByGroup(foldername, setname, g)
                 for id in writingIDs:
                     writing = self.getWritingByID(id)
-                    f.write(f"{writing['prompt']} | {writing['write']}\n")
-                    
+                    f.write(f"{writing['prompt']} | {writing['write']}\n")                 
     def addFolder(self, foldername):
         self.c.execute("INSERT OR IGNORE INTO folders (name) VALUES (?)", (foldername,))
         self.conn.commit()
