@@ -1,6 +1,6 @@
 set_name: HSK1
 
-[cards]
+cards: Radicals
 [[front]Radical | [back]Meaning | [back]Interpretation]
 氵 | shuǐ | Shaped like three water drops. Usually related to water.
 讠 | yán | Usually related to language and speech.
@@ -21,6 +21,7 @@ set_name: HSK1
 艹 | cǎo | Usually related to grass, trees, or plants
 宀 | mián | Usually related to houses
 
+cards: Words
 [[back]pinyin | [back]definition | [front]hanzi]
 ài | to like, to love | 爱
 a | A modal particle used at the end of a sentence as a sign of confirmation or defense | 啊
@@ -255,204 +256,211 @@ zuò | To make, to produce | 做
 Zhāng | Zhang, a common Chinese family name | 张
 Zhōngguó | China | 中国
 
+cards: Answer in Chinese
 [[front]Question | [back]Answer]
-Answer in Chinese: 你叫什么名字？ | 
-Answer in Chinese: 你是中国人吗？ | 
-Answer in Chinese: 你是美国人？ | 
-Answer in Chinese: 你是学生吗？ | 
-Answer in Chinese: 你是老师吗？ | 
-Answer in Chinese: 你是学生吗？ | 
-Answer in Chinese: 你是哪国人？ | 
-Answer in Chinese: 你的汉语老师是哪国人？ | 
-Answer in Chinese: 你的汉语老师叫什么名字？ | 
-Answer in Chinese: 你家有几口人？ | 
-Answer in Chinese: 你今年多大了？ | 
-Answer in Chinese: 你会说汉语吗？ | 
-Answer in Chinese: 你会写汉字吗？ | 
-Answer in Chinese: 你会做中国菜吗？ | 
-Answer in Chinese: 你有汉语名字吗？ | 
-Answer in Chinese: 你会写你的汉语名字吗？ | 
-Answer in Chinese: 今天几月几号星期几？ | 
-Answer in Chinese: 明天你去哪儿做什么？ | 
-Answer in Chinese: 星期日你去哪儿做什么？ | 
-Answer in Chinese: 你想吃什么？ | 
-Answer in Chinese: 你想和什么？ | 
-Answer in Chinese: 明天下午你想做什么？ | 
-Answer in Chinese: 你去哪个商店买被子？ | 
-Answer in Chinese: 一个被子多少钱？ | 
-Answer in Chinese: 小狗在哪儿？ | 
-Answer in Chinese: 他在哪儿工作？ | 
-Answer in Chinese: 他儿子在哪儿工作？ | 
-Answer in Chinese: 他爸爸在家吗？ | 
-Answer in Chinese: 电脑在哪儿？ | 
-Answer in Chinese: 书在哪儿？ | 
-Answer in Chinese: 卓资里面有什么？ | 
-Answer in Chinese: 哪个认识王方？ | 
-Answer in Chinese: 现在几点？ | 
-Answer in Chinese: 他们几点吃饭？ | 
-Answer in Chinese: 爸爸什么时候会家？ | 
-Answer in Chinese: 昨天北京的天气怎嘛样？ | 
-Answer in Chinese: 明天天气怎嘛样？ | 
-Answer in Chinese: 今天会下雨吗？ | 
-Answer in Chinese: 你的身体怎嘛样？ | 
-Answer in Chinese: 大卫在做什么呢？ | 
-Answer in Chinese: 昨天上午他在看书吗？ | 
-Answer in Chinese: 李老师的电话号码是多少？ | 
-Answer in Chinese: 昨天上午她去哪儿了？ | 
-Answer in Chinese: 她买什么了？ | 
-Answer in Chinese: 张先生什么时候能回来？ | 
-Answer in Chinese: 他们是什么时候认识的？ | 
-Answer in Chinese: 他们是在哪儿认识的？ | 
-Answer in Chinese: 他们是怎么去饭店的？ | 
-Answer in Chinese: 李先生是坐出租车去饭店的吗？ | 
-Answer in Chinese: 李小姐是怎么来北京的？ | 
-Translate: 你叫什么名字？我叫李月。 |  What is your name? My name is Li Yue.
-Translate: 你是老师吗？我不是老师，我是学生。 |  Are you a teacher? No, I’m not. I’m a student.
-Translate: 你是中国人吗？我不是中国人，我是美国人。 |  Are you Chinese? No, I’m not. I’m American.
-Translate: 这是什么？  |  What is this?/This is what?
-Translate: 这是什么书？ |  What book is this?
-Translate: 中国朋友  |  Chinese Friend
-Translate: 她是谁？ |  Who is she?
-Translate: 她是我的汉语老师，她叫李月。 |  She is my Chinese teacher. Her name is Li Yue.
-Translate: 你是哪国人？ |  Which country are you from?
-Translate: 我是美国人。你呢？ |  I’m from the United States. What about you?
-Translate: 他是我同学。 |  He is my classmate.
-Translate: 她呢？她是你同学吗？ |  What about her? Is she your classmate?
-Translate: 她不是我同学，她是我朋友。 |  No she is not my classmate. She is my friend.
-Translate: 谁是李月？ |  Who is Li Yue?
-Translate: 哪本书？  |  Which book?
-Translate: 她是我朋友。 |  She is my friend.
-Translate: 六口人  |  Six people
-Translate: 七十岁  |  Seventy years old
-Translate: 你家有几口人？  |  How many people are there in your family?
-Translate: 我家有三口人。 |  There are three people in my family.
-Translate: 你女儿几岁了？ |  How old is your daughter?
-Translate: 她今年四岁了。  |  She is four years old.
-Translate: 李老师多大了？  |  How old is Professor Li?
-Translate: 她今年50岁了。 |  She is 50 years old.
-Translate: 她女儿呢？ |  What about her daughter?
-Translate: 她女儿今年20岁。 |  Her daughter is 20.
-Translate: 二十三  |  23
-Translate: 五十六  |  56
-Translate: 做中国菜  |  Cook Chinese food
-Translate: 你会说汉语吗？ |  Can you speak Chinese?
-Translate: 我会说汉语。 |  Yes, I can speak Chinese.
-Translate: 你妈妈会说汉语吗？ |  Can your mother speak Chinese?
-Translate: 她不会说。 |  No, she can’t speak Chinese.
-Translate: 中国菜好吃吗？ |  Is Chinese food delicious?
-Translate: 中国菜很好吃。 |  Yes, Chinese food is delicious?
-Translate: 你会做中国菜吗？ |  Can you cook Chinese food?
-Translate: 你会写汉字吗？ |  Can you write Chinese characters?
-Translate: 这个字怎么写？ |  How do you write this character?
-Translate: 对不起，这个字我会读，不会写。 |  Sorry. I can read it, but I don’t know how to write it.
-Translate: 请问， 今天几号？ |  Excuse me, what’s the date today?
-Translate: 今天9月1好。 |  Today is September 1st.
-Translate: 今天星期几？ |  What day is it today?
-Translate: 星期三。  |  Wednesday
-Translate: 昨天是几月几号？ |  What was the date yesterday?
-Translate: 昨天是8月31号，星期二。 |  It was Tuesday, August 31st.
-Translate: 明天呢？ |  What about tomorrow?
-Translate: 明天是9月2号，星期四。 |  It’s Thursday, September 2nd.
-Translate: 明天星期六，你去学校吗？ |  Tomorrow is Saturday, Will you go to school?
-Translate: 我去学校。 |  Yes, I will go to school.
-Translate: 你去学校做什么？ |  What are you going to do at school?
-Translate: 我去学校看书。 |  I’m going to school to read some books
-Translate: 你想喝什么？ |  What would you like to drink?
-Translate: 我想喝茶。 |  I’d like some tea
-Translate: 你想吃什么？ |  What would you like to eat?
-Translate: 我想吃米饭。 |  I’d like rice.
-Translate: 下午你想做什么？ |  What would you like to do this afternoon?
-Translate: 下午我想去商店。  |  I’d like to go shopping this afternoon.
-Translate: 你想买什么？ |  What do you want to buy?
-Translate: 我想买一个被子。 |  I want to buy a cup.
-Translate: 这个被子多少钱？ |  How much is this cup?
-Translate: 28快。 |  28 yuan.
-Translate: 那个被子多少钱？ |  How much is that cup?
-Translate: 那个被子18块钱。  |  That cup is 18 yuan.
-Translate: 小猫在哪儿？ |  Where is the kitty?
-Translate: 小猫在哪儿？ |  The kitty is over there.
-Translate: 小狗在椅子下面。 |  The puppy is under the chair.
-Translate: 你在哪儿工作？ |  Where do you work?
-Translate: 我在学校工作。 |  I work in a school.
-Translate: 你儿子在哪儿工作？ |  Where does your son work?
-Translate: 我儿子在医院工作， 他是医生。 |  My son works in a hospital. He is a doctor.
-Translate: 你爸爸在家吗？ |  Is your father at home?
-Translate: 不在家。 |  No, he isn’t.
-Translate: 他在哪儿呢？ |  Where is he?
-Translate: 他在医院。 |  He is in the hospital.
-Translate: 桌子上有什么？ |  What are there on the desk?
-Translate: 桌子上有一个电脑和一本书。 |  There is a computer and a book.
-Translate: 被子在哪儿？ |  Where is the cup?
-Translate: 被子在桌子里。 |  The cup is on the desk.
-Translate: 前面那个人叫什么名字？ |  Who is the person in the front?
-Translate: 她叫王方，在医院工作。 |  She is Wang Fang. She works in a hospital.
-Translate: 后面那个人呢？他叫什么名字？ |  What about the person at the back? What’s his name?
-Translate: 他叫谢朋，在商店工作。 |  He is Xie Peng. He works in a store.
-Translate: 这儿有人马？ |  Is this seat taken?
-Translate: 没有。 |  No, it isn’t.
-Translate: 我能坐这人吗？ |  Can I sit here?
-Translate: 请坐。 |  Yes, Please.
-Translate: 现在几点？ |  What’s the time now?
-Translate: 现在十点十分。 |  It is 10:10.
-Translate: 中午几点吃饭？ |  When shall we have our lunch?
-Translate: 十二点吃饭。 |  At 12:00.
-Translate: 爸爸什么时候回家？ |  When is father coming home?
-Translate: 下午五点。 |  At 5:00 in the afternoon.
-Translate: 我们什么时候去看电影?  |  When are we going to see the movie?
-Translate: 六点三十分。 |  At 6:30.
-Translate: 我星期一去北京。 |  I’ll go to Beijing next Monday.
-Translate: 你想在北京住几天？ |  How long will you stay in Beijing?
-Translate: 住三天。  |  For three days.
-Translate: 星期五前能回家吗？ |  Can you come back before Friday?
-Translate: 能 。 |  Yes, I can.
-Translate: 昨天北京的天气怎么样？ |  How was the weather in Beijing yesterday?
-Translate: 太热了。 |  It was too hot.
-Translate: 明天呢？明天天气怎么样？ |  What about tomorrow? What will the weather be like tomorrow?
-Translate: 明天天气很好，不冷不热。 |  It will be fine, neither cold nor hot.
-Translate: 今天会下雨吗？ |  Will it rain today?
-Translate: 今天不会下雨。 |  No, it won’t rain.
-Translate: 王小姐今天会来吗？ |  Will Miss Wang come today?
-Translate: 不会来，天气太冷了。 |  No, she won’t. It’s too cold.
-Translate: 你身体怎么样？ |  How are you?
-Translate: 我身体不太好。天气太热了，不爱吃饭。 |  “Not very well. It’s too hot. I have no appetite.
-Translate: 你多吃些水果，多喝水。 |  Eat more fruit and drink more water.
-Translate: 谢谢你，医生。 |  Thank you, doctor.
-Translate: 喂，你在做什么呢？ |  Hello, what are you doing?
-Translate: 我在看书呢。 |  I’m reading.
-Translate: 大卫也在看书吗？ |  Is David reading too?
-Translate: 他没看书，他在学做中国菜呢。 |  No, he isn’t. He is learning to cook Chinese food.
-Translate: 昨天上午你在做什么呢？ |  What were you doing yesterday morning?
-Translate: 我在谁叫呢。你呢？ |  I was sleeping. What about you?
-Translate: 我在家看电视呢。你喜欢看电视吗？ |  I was watching TV at home. Do you like watching TV?
-Translate: 我不喜欢看电话，我喜欢看电影。 |  No, I don’t. I like watching movies.
-Translate: 82304155，这是李老师的电话吗？ |  82304155. Is that Ms. Li’s telephone number?
-Translate: 不是。她的电话是82304156。 |  No. Her number is 82304156.
-Translate: 好，我现在给她打电话。 |  OK. I’ll call hero right now.
-Translate: 她在工作呢，你下午打吧。 |  She is working. Call her in the afternoon.
-Translate: 昨天上午你去哪儿了？ |  Where did you go yesterday morning?
-Translate: 我去商店买东西了。 |  I went shopping.
-Translate: 你买什么了？ |  What did you buy?
-Translate: 我买了一点儿苹果。 |  I bought some apples.
-Translate: 你看见张先生了吗？ |  Have you seen Mr. Zhang?
-Translate: 看见了，他去学开车了。 |  Yes. He has gone to a driving lesson.
-Translate: 他什么时候能回来？ |  When can he come back?
-Translate: 40分钟后回来。 |  After 40 minutes.
-Translate: 王方的衣服太漂亮了！ |  Wang Fang’s dress is so pretty!
-Translate: 是啊，她买了不少衣服。 |  Yes. She has bought quite a few clothes.
-Translate: 你买什么了？ |  What did you buy?
-Translate: 我没买，这些都是王方的东西。 |  I bought nothing. All these are Wang Fang’s stuff.
-Translate: 你和李小姐是什么时候认识的？ |  When did you and Miss Li first meet?
-Translate: 我们是2011年9月认识的。 |  We met in September 2011.
-Translate: 你们在哪儿认识的？ |  Where did you meet each other?
-Translate: 我们是在学校认识的，她是我大学同学。 |  We met in out university. She was my classmate.
-Translate: 你们是怎么来饭店的？ |  How did you come here?
-Translate: 我们是坐出租车来的。 |  We came by taxi.
-Translate: 李先生呢？ |  What about Mr. Li?
-Translate: 他是和朋友一起开车来的。 |  He drove here with his friend.
-Translate: 很高兴认识您！李小姐。 |  Nice to meet you, Miss Li.
-Translate: 认识你我也很高兴！ |  Nice to meet you too.
-Translate: 听张先生说，您是坐飞机来北京的？ |  Mr. Zhang said you came to Beijing by plane, didn’t you?
-Translate: 是的。 |  Yes. I did.
+你叫什么名字？ | 
+你是中国人吗？ | 
+你是美国人？ | 
+你是学生吗？ | 
+你是老师吗？ | 
+你是学生吗？ | 
+你是哪国人？ | 
+你的汉语老师是哪国人？ | 
+你的汉语老师叫什么名字？ | 
+你家有几口人？ | 
+你今年多大了？ | 
+你会说汉语吗？ | 
+你会写汉字吗？ | 
+你会做中国菜吗？ | 
+你有汉语名字吗？ | 
+你会写你的汉语名字吗？ | 
+今天几月几号星期几？ | 
+明天你去哪儿做什么？ | 
+星期日你去哪儿做什么？ | 
+你想吃什么？ | 
+你想和什么？ | 
+明天下午你想做什么？ | 
+你去哪个商店买被子？ | 
+一个被子多少钱？ | 
+小狗在哪儿？ | 
+他在哪儿工作？ | 
+他儿子在哪儿工作？ | 
+他爸爸在家吗？ | 
+电脑在哪儿？ | 
+书在哪儿？ | 
+卓资里面有什么？ | 
+哪个认识王方？ | 
+现在几点？ | 
+他们几点吃饭？ | 
+爸爸什么时候会家？ | 
+昨天北京的天气怎嘛样？ | 
+明天天气怎嘛样？ | 
+今天会下雨吗？ | 
+你的身体怎嘛样？ | 
+大卫在做什么呢？ | 
+昨天上午他在看书吗？ | 
+李老师的电话号码是多少？ | 
+昨天上午她去哪儿了？ | 
+她买什么了？ | 
+张先生什么时候能回来？ | 
+他们是什么时候认识的？ | 
+他们是在哪儿认识的？ | 
+他们是怎么去饭店的？ | 
+李先生是坐出租车去饭店的吗？ | 
+李小姐是怎么来北京的？ | 
+
+cards: Translate Chinese -> English
+[[front]Prompt | [back]Answer]
+你叫什么名字？我叫李月。 |  What is your name? My name is Li Yue.
+你是老师吗？我不是老师，我是学生。 |  Are you a teacher? No, I’m not. I’m a student.
+你是中国人吗？我不是中国人，我是美国人。 |  Are you Chinese? No, I’m not. I’m American.
+这是什么？  |  What is this?/This is what?
+这是什么书？ |  What book is this?
+中国朋友  |  Chinese Friend
+她是谁？ |  Who is she?
+她是我的汉语老师，她叫李月。 |  She is my Chinese teacher. Her name is Li Yue.
+你是哪国人？ |  Which country are you from?
+我是美国人。你呢？ |  I’m from the United States. What about you?
+他是我同学。 |  He is my classmate.
+她呢？她是你同学吗？ |  What about her? Is she your classmate?
+她不是我同学，她是我朋友。 |  No she is not my classmate. She is my friend.
+谁是李月？ |  Who is Li Yue?
+哪本书？  |  Which book?
+她是我朋友。 |  She is my friend.
+六口人  |  Six people
+七十岁  |  Seventy years old
+你家有几口人？  |  How many people are there in your family?
+我家有三口人。 |  There are three people in my family.
+你女儿几岁了？ |  How old is your daughter?
+她今年四岁了。  |  She is four years old.
+李老师多大了？  |  How old is Professor Li?
+她今年50岁了。 |  She is 50 years old.
+她女儿呢？ |  What about her daughter?
+她女儿今年20岁。 |  Her daughter is 20.
+二十三  |  23
+五十六  |  56
+做中国菜  |  Cook Chinese food
+你会说汉语吗？ |  Can you speak Chinese?
+我会说汉语。 |  Yes, I can speak Chinese.
+你妈妈会说汉语吗？ |  Can your mother speak Chinese?
+她不会说。 |  No, she can’t speak Chinese.
+中国菜好吃吗？ |  Is Chinese food delicious?
+中国菜很好吃。 |  Yes, Chinese food is delicious?
+你会做中国菜吗？ |  Can you cook Chinese food?
+你会写汉字吗？ |  Can you write Chinese characters?
+这个字怎么写？ |  How do you write this character?
+对不起，这个字我会读，不会写。 |  Sorry. I can read it, but I don’t know how to write it.
+请问， 今天几号？ |  Excuse me, what’s the date today?
+今天9月1好。 |  Today is September 1st.
+今天星期几？ |  What day is it today?
+星期三。  |  Wednesday
+昨天是几月几号？ |  What was the date yesterday?
+昨天是8月31号，星期二。 |  It was Tuesday, August 31st.
+明天呢？ |  What about tomorrow?
+明天是9月2号，星期四。 |  It’s Thursday, September 2nd.
+明天星期六，你去学校吗？ |  Tomorrow is Saturday, Will you go to school?
+我去学校。 |  Yes, I will go to school.
+你去学校做什么？ |  What are you going to do at school?
+我去学校看书。 |  I’m going to school to read some books
+你想喝什么？ |  What would you like to drink?
+我想喝茶。 |  I’d like some tea
+你想吃什么？ |  What would you like to eat?
+我想吃米饭。 |  I’d like rice.
+下午你想做什么？ |  What would you like to do this afternoon?
+下午我想去商店。  |  I’d like to go shopping this afternoon.
+你想买什么？ |  What do you want to buy?
+我想买一个被子。 |  I want to buy a cup.
+这个被子多少钱？ |  How much is this cup?
+28快。 |  28 yuan.
+那个被子多少钱？ |  How much is that cup?
+那个被子18块钱。  |  That cup is 18 yuan.
+小猫在哪儿？ |  Where is the kitty?
+小猫在哪儿？ |  The kitty is over there.
+小狗在椅子下面。 |  The puppy is under the chair.
+你在哪儿工作？ |  Where do you work?
+我在学校工作。 |  I work in a school.
+你儿子在哪儿工作？ |  Where does your son work?
+我儿子在医院工作， 他是医生。 |  My son works in a hospital. He is a doctor.
+你爸爸在家吗？ |  Is your father at home?
+不在家。 |  No, he isn’t.
+他在哪儿呢？ |  Where is he?
+他在医院。 |  He is in the hospital.
+桌子上有什么？ |  What are there on the desk?
+桌子上有一个电脑和一本书。 |  There is a computer and a book.
+被子在哪儿？ |  Where is the cup?
+被子在桌子里。 |  The cup is on the desk.
+前面那个人叫什么名字？ |  Who is the person in the front?
+她叫王方，在医院工作。 |  She is Wang Fang. She works in a hospital.
+后面那个人呢？他叫什么名字？ |  What about the person at the back? What’s his name?
+他叫谢朋，在商店工作。 |  He is Xie Peng. He works in a store.
+这儿有人马？ |  Is this seat taken?
+没有。 |  No, it isn’t.
+我能坐这人吗？ |  Can I sit here?
+请坐。 |  Yes, Please.
+现在几点？ |  What’s the time now?
+现在十点十分。 |  It is 10:10.
+中午几点吃饭？ |  When shall we have our lunch?
+十二点吃饭。 |  At 12:00.
+爸爸什么时候回家？ |  When is father coming home?
+下午五点。 |  At 5:00 in the afternoon.
+我们什么时候去看电影?  |  When are we going to see the movie?
+六点三十分。 |  At 6:30.
+我星期一去北京。 |  I’ll go to Beijing next Monday.
+你想在北京住几天？ |  How long will you stay in Beijing?
+住三天。  |  For three days.
+星期五前能回家吗？ |  Can you come back before Friday?
+能 。 |  Yes, I can.
+昨天北京的天气怎么样？ |  How was the weather in Beijing yesterday?
+太热了。 |  It was too hot.
+明天呢？明天天气怎么样？ |  What about tomorrow? What will the weather be like tomorrow?
+明天天气很好，不冷不热。 |  It will be fine, neither cold nor hot.
+今天会下雨吗？ |  Will it rain today?
+今天不会下雨。 |  No, it won’t rain.
+王小姐今天会来吗？ |  Will Miss Wang come today?
+不会来，天气太冷了。 |  No, she won’t. It’s too cold.
+你身体怎么样？ |  How are you?
+我身体不太好。天气太热了，不爱吃饭。 |  “Not very well. It’s too hot. I have no appetite.
+你多吃些水果，多喝水。 |  Eat more fruit and drink more water.
+谢谢你，医生。 |  Thank you, doctor.
+喂，你在做什么呢？ |  Hello, what are you doing?
+我在看书呢。 |  I’m reading.
+大卫也在看书吗？ |  Is David reading too?
+他没看书，他在学做中国菜呢。 |  No, he isn’t. He is learning to cook Chinese food.
+昨天上午你在做什么呢？ |  What were you doing yesterday morning?
+我在谁叫呢。你呢？ |  I was sleeping. What about you?
+我在家看电视呢。你喜欢看电视吗？ |  I was watching TV at home. Do you like watching TV?
+我不喜欢看电话，我喜欢看电影。 |  No, I don’t. I like watching movies.
+82304155，这是李老师的电话吗？ |  82304155. Is that Ms. Li’s telephone number?
+不是。她的电话是82304156。 |  No. Her number is 82304156.
+好，我现在给她打电话。 |  OK. I’ll call hero right now.
+她在工作呢，你下午打吧。 |  She is working. Call her in the afternoon.
+昨天上午你去哪儿了？ |  Where did you go yesterday morning?
+我去商店买东西了。 |  I went shopping.
+你买什么了？ |  What did you buy?
+我买了一点儿苹果。 |  I bought some apples.
+你看见张先生了吗？ |  Have you seen Mr. Zhang?
+看见了，他去学开车了。 |  Yes. He has gone to a driving lesson.
+他什么时候能回来？ |  When can he come back?
+40分钟后回来。 |  After 40 minutes.
+王方的衣服太漂亮了！ |  Wang Fang’s dress is so pretty!
+是啊，她买了不少衣服。 |  Yes. She has bought quite a few clothes.
+你买什么了？ |  What did you buy?
+我没买，这些都是王方的东西。 |  I bought nothing. All these are Wang Fang’s stuff.
+你和李小姐是什么时候认识的？ |  When did you and Miss Li first meet?
+我们是2011年9月认识的。 |  We met in September 2011.
+你们在哪儿认识的？ |  Where did you meet each other?
+我们是在学校认识的，她是我大学同学。 |  We met in out university. She was my classmate.
+你们是怎么来饭店的？ |  How did you come here?
+我们是坐出租车来的。 |  We came by taxi.
+李先生呢？ |  What about Mr. Li?
+他是和朋友一起开车来的。 |  He drove here with his friend.
+很高兴认识您！李小姐。 |  Nice to meet you, Miss Li.
+认识你我也很高兴！ |  Nice to meet you too.
+听张先生说，您是坐飞机来北京的？ |  Mr. Zhang said you came to Beijing by plane, didn’t you?
+是的。 |  Yes. I did.
+
+cards: Questions
+[[front]Question | [back]Answer]
 What three components make up a Chinese Syllable? | Initial (optional), final, and tone. (EX: 二 => initial: N/A, Final: er, Tone: `)
 Simplify the following pinyin: i, in, ing, ia, ie, iao, ian, iang, iong, iu, u, ua, uo, uai, uan, uang, ueng, ü, üe, üan, ün, iou, uei, uen, jü, qü, xü, xian, xion, xien | yi, yin, ying, ya, ye, yao, yan, yang, yong, you, wu, wa, wo, wai, wan, wang, weng, yu, yue, yuan, yun, iu, ui, un, ju, qu, xu, xi’an, xi’on, xi’en
 List the tone order of finals. Is there any exceptions | a, o, e, i, u, ü. Exception: iu. The tone is put on the u.
@@ -480,7 +488,7 @@ What is the difference between reading years and reading months/dates. | Years a
 
 
 
-[writing]
+writing: Radicals
 [write | prompt]
 氵 | Radical shuǐ - Shaped like three water drops. Usually related to water.
 讠 | Radical yán - Usually related to language and speech.
@@ -500,6 +508,8 @@ What is the difference between reading years and reading months/dates. | Years a
 扌 | Radical shǒu - Usually indicates an action related to a hand
 艹 | Radical cǎo - Usually related to grass, trees, or plants
 宀 | Radical mián - Usually related to houses 
+
+writing: Words
 [prompt | write]
 ài - to like, to love | 爱
 a - A modal particle used at the end of a sentence as a sign of confirmation or defense | 啊

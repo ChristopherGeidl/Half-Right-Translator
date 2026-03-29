@@ -1,117 +1,127 @@
-import customtkinter as ctk
+import sys
 import os
-from tkinter import filedialog, messagebox
+from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
+                             QLabel, QPushButton, QScrollArea, QFrame, QInputDialog,
+                             QMessageBox, QFileDialog, QLineEdit)
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
 from DataBaseManager import DataBaseManager
 
-#Appearance
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("Appearance/red_theme.json")
-
-class App(ctk.CTk):
+class HRT(QMainWindow):
     def __init__(self, width, height):
         super().__init__()
 
         self.db = DataBaseManager("HRT.db")
+        self.setWindowTitle("Half Right Translator")
+        self.resize(width, height)
 
-        self.title("Half Right Translator")
-        self.geometry(f"{width}x{height}")
+        self.main_container = QWidget()
+        self.setCentralWidget(self.main_container)
+        self.main_layout = QVBoxLayout(self.main_container)
+        self.main_layout.setContentsMargins(10, 10, 10, 10)
 
-        # header
-        self.header = ctk.CTkFrame(self, width=width)
-        self.header.pack()
-        self.header.grid_columnconfigure(0, weight=0)
-        self.header.grid_columnconfigure(1, weight=1)
-        self.header.grid_columnconfigure(2, weight=0)
+        self.header = QFrame()
+        self.header_layout = QHBoxLayout(self.header)
+        self.header.setObjectName("header")
+        
+        self.back_btn = QPushButton("<")
+        self.back_btn.setFixedSize(40, 40)
+        self.back_btn.clicked.connect(self.refresh_folder_list)
+        self.back_btn.setObjectName("back_btn")
+        
+        self.label = QLabel("Select a Study Group")
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.label.setObjectName("label")
 
-        self.back_btn = ctk.CTkButton(
-                self.header, 
-                text="<",
-                command=lambda: self.refresh_folder_list(),
-                width=40,
-                height=10,
-                font=("Roboto", 24, "bold")
-            )
-        self.back_btn.grid(row=0, column=0, sticky="w", padx=10, pady=10)
+        self.header_layout.addWidget(self.back_btn)
+        self.header_layout.addWidget(self.label, stretch=1) # Stretch=1 makes it take middle space
+        
+        self.main_layout.addWidget(self.header)
 
-        self.label = ctk.CTkLabel(
-                self.header, 
-                text="Select a Study Group", 
-                font=("Roboto", 15, "bold"),
-                width=(width*0.85)
-            )
-        self.label.grid(row=0, column=1)
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QFrame.Shape.Box)
+        self.scroll.setLineWidth(2)
+        
+        self.scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop) # Buttons start at top
+        
+        self.scroll.setWidget(self.scroll_content)
+        self.scroll.setObjectName("scroll")
+        self.main_layout.addWidget(self.scroll)
 
-        spacer = ctk.CTkFrame(self.header, width=40, height=1)
-        spacer.grid(row=0, column=2, padx=0, pady=0)
-
-        # Container for the list of files
-        self.scroll_frame = ctk.CTkScrollableFrame(
-                self, 
-                width=(width*9/10), 
-                height=(height*7/10), 
-                border_width=2
-            )
-        self.scroll_frame.pack(pady=10)
-
-        #footer
-        self.footer = ctk.CTkFrame(self, width=width)
-        self.footer.pack()
-        self.footer.grid_columnconfigure(0, weight=1)
-        self.footer.grid_columnconfigure(1, weight=1)
-
+        self.footer = QFrame()
+        self.footer_layout = QHBoxLayout(self.footer)
+        self.footer.setObjectName("footer")
+        
+        self.main_layout.addWidget(self.footer)
 
         self.refresh_folder_list()
     def delete_widgets(self):
-        for widget in self.scroll_frame.winfo_children():
-            widget.destroy()
-        for widget in self.footer.winfo_children():
-            widget.destroy()
+        def clear_layout(layout):
+            if layout is not None:
+                while layout.count():
+                    item = layout.takeAt(0)
+                    widget = item.widget()
+                    if widget is not None:
+                        widget.deleteLater()
+
+        clear_layout(self.scroll_layout)
+        clear_layout(self.footer_layout)
     def addFolder(self):
-        dialog = ctk.CTkInputDialog(text="Enter folder name:", title="New Folder")
-        foldername = dialog.get_input()
+        foldername, ok_pressed = QInputDialog.getText(
+            self, "New Folder", "Enter folder name:"
+        )
 
-        folders = self.db.getFolders()
-
-        if(foldername in folders):
-            messagebox.showerror("Name Error", f"{foldername} already exists")
+        if not ok_pressed:
             return
 
-        if(foldername): 
-            self.db.addFolder(foldername)
-            print(f"Added folder: {foldername}")
-            self.refresh_folder_list()
+        foldername = foldername.strip()
+
+        if not foldername:
+            QMessageBox.warning(self, "Input Error", "Folder name cannot be empty.")
+            return
+
+        folders = self.db.getFolders()
+        if foldername in folders:
+            QMessageBox.critical(self, "Name Error", f"'{foldername}' already exists.")
+            return
+
+        self.db.addFolder(foldername)
+        print(f"Added folder: {foldername}")
+        self.refresh_folder_list()
     def refresh_folder_list(self):
-        self.back_btn.configure(command=lambda: self.refresh_folder_list())
-        self.label.configure(text="Select a Study Group")
+        try:
+            self.back_btn.clicked.disconnect()
+        except TypeError:
+            pass
+            
+        self.back_btn.clicked.connect(self.refresh_folder_list)
+        self.label.setText("Select a Study Group")
         self.delete_widgets()
 
         folders = self.db.getFolders()
 
         if not folders:
-            no_folder_label = ctk.CTkLabel(self.scroll_frame, text="No folders found")
-            no_folder_label.pack(pady=20)
-        
-        for folder in folders:
-            btn = ctk.CTkButton(
-                self.scroll_frame, 
-                text=folder,
-                command=lambda f=folder: self.load_folder(f),
-                height=40,
-            )
-            btn.pack(fill="x", pady=5, padx=10)
+            no_folder_label = QLabel("No folders found")
+            no_folder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.scroll_layout.addWidget(no_folder_label)
 
-        btn = ctk.CTkButton(
-            self.scroll_frame,
-            text="+",
-            command=lambda: self.addFolder(),
-            height=40,
-            font=("Roboto", 15, "bold"),
-        )
-        btn.pack(pady=5, padx=5)
+        for folder in folders:
+            btn = QPushButton(folder)
+            btn.clicked.connect(lambda checked, f=folder: self.load_folder(f))
+            self.scroll_layout.addWidget(btn)
+
+        add_btn = QPushButton("+")
+        add_btn.clicked.connect(self.addFolder)
+        self.scroll_layout.addWidget(add_btn)
     def importTXT(self, foldername, overrideConsent=0):
-        file_path = filedialog.askopenfilename(
-            title="Select TXT file",
-            filetypes=[("Text Files", "*.txt")]
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select TXT file",
+            "",
+            "Text Files (*.txt);;All Files (*)"
         )
 
         if not file_path:
@@ -120,167 +130,256 @@ class App(ctk.CTk):
         print(f"Importing: {file_path}")
 
         try:
-            #if the user does already know they are adding to existing
-            if(not overrideConsent): 
+            if not overrideConsent:
                 set_names = self.db.getSetsInFolder(foldername)
                 file_name = ""
-                
+
                 with open(file_path, "r", encoding="utf-8") as f:
                     for line in f:
                         if line.lower().startswith("set_name:"):
-                            file_name =  line.split(":", 1)[1].strip()
+                            file_name = line.split(":", 1)[1].strip()
                             break
 
-                if(file_name in set_names):
-                    add = messagebox.askyesno(
+                if file_name and file_name in set_names:
+                    reply = QMessageBox.question(
+                        self,
                         "File Exists",
-                        f"{foldername}/{file_name}\nalready exists.\nDo you want to add to the existing file?"
+                        f"{foldername}/{file_name}\nalready exists.\nDo you want to add to the existing file?",
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                        QMessageBox.StandardButton.No # Default focus
                     )
-                    if not add:
+
+                    if reply == QMessageBox.StandardButton.No:
                         print("Import canceled by user.")
                         return
 
             self.db.importTXT(file_path, foldername)
             print("Import successful!")
+
             self.load_folder(foldername)
+            
         except Exception as e:
             print(f"Error importing file: {e}")
-            messagebox.showerror("Import Error", str(e))
+            QMessageBox.critical(self, "Import Error", f"Failed to import: {str(e)}")
     def export_file(self, foldername, setname):
         initial_name = f"{foldername} - {setname}.txt"
-        file_path = filedialog.asksaveasfilename(
-            title="Export Set",
-            defaultextension=".txt",
-            initialfile=initial_name,
-            filetypes=[("Text Files", "*.txt")]
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Set",
+            initial_name,
+            "Text Files (*.txt);;All Files (*)"
         )
 
         if not file_path:
-            return # User canceled
+            return 
 
         try:
             self.db.exportTXT(foldername, setname, file_path)
-            messagebox.showinfo("Export Successful", f"Saved {setname} to:\n{file_path}")
+
+            QMessageBox.information(
+                self, 
+                "Export Successful", 
+                f"Saved '{setname}' to:\n{file_path}"
+            )
+            
         except Exception as e:
-            messagebox.showerror("Export Error", f"Could not export file: {e}")
+            QMessageBox.critical(
+                self, 
+                "Export Error", 
+                f"Could not export file:\n{str(e)}"
+            )
     def load_folder(self, foldername):
-        self.back_btn.configure(command=lambda: self.refresh_folder_list())
-        self.label.configure(text=f"{foldername}")  
+        try:
+            self.back_btn.clicked.disconnect()
+        except TypeError:
+            pass
+        self.back_btn.clicked.connect(self.refresh_folder_list)
+        self.label.setText(foldername)
+
         self.delete_widgets()
-        
+
         sets = self.db.getSetsInFolder(foldername)
 
         if not sets:
-            no_files_label = ctk.CTkLabel(self.scroll_frame, text="No files found in /Test_Sets/"+foldername+" folder")
-            no_files_label.pack(pady=20)
-        
-        for set in sets:
-            btn = ctk.CTkButton(
-                self.scroll_frame, 
-                text=set,
-                command=lambda f=set: self.load_set(foldername,f),
-                height=40,
-            )
-            btn.pack(fill="x", pady=5, padx=10)
+            no_files_label = QLabel(f"No files found in {foldername}")
+            no_files_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.scroll_layout.addWidget(no_files_label)
 
-        btn = ctk.CTkButton(
-            self.scroll_frame,
-            text="+",
-            command=lambda: self.importTXT(foldername),
-            height=40,
-            font=("Roboto", 15, "bold"),
-        )
-        btn.pack(pady=5, padx=5)
+        for setname in sets:
+            btn = QPushButton(setname)
+            btn.clicked.connect(lambda _, f=foldername, s=setname: self.load_set(f, s))
+            self.scroll_layout.addWidget(btn)
+
+        import_btn = QPushButton("Import TXT (+)")
+        import_btn.clicked.connect(lambda: self.importTXT(foldername))
+        self.footer_layout.addWidget(import_btn)
     def load_set(self, foldername, setname):
-        self.back_btn.configure(command=lambda: self.load_folder(foldername))
-        self.label.configure(text=f"{foldername}: {setname}")  
+        try:
+            self.back_btn.clicked.disconnect()
+        except TypeError:
+            pass
+        self.back_btn.clicked.connect(lambda: self.load_folder(foldername))
+        self.label.setText(f"{foldername}: {setname}")
         self.delete_widgets()
 
         cardGroups = self.db.getCardGroupNames(foldername, setname)
         writingGroups = self.db.getWritingGroupNames(foldername, setname)
 
-        for c in cardGroups:
-            btn = ctk.CTkButton(
-                self.scroll_frame, 
-                text=f"Cards: {c}",
-                command=lambda g=c: self.load_cards(foldername,setname,g),
-                height=40,
-            )
-            btn.pack(fill="x", pady=5, padx=10)
-        for w in writingGroups:
-            btn = ctk.CTkButton(
-                    self.scroll_frame, 
-                    text=f"Writing: {w}",
-                    command=lambda g=w: self.load_writing(foldername,setname,g),
-                    height=40,
-                )
-            btn.pack(fill="x", pady=5, padx=10)
-        btn = ctk.CTkButton(
-                self.scroll_frame, 
-                text="Test",
-                command=lambda f=set: self.load_test(foldername,setname),
-                height=40,
-            )
-        btn.pack(fill="x", pady=5, padx=10)
+        for c_group in cardGroups:
+            btn = QPushButton(f"Cards: {c_group}")
+            btn.clicked.connect(lambda _, g=c_group: self.load_card(foldername, setname, g, index=0))
+            self.scroll_layout.addWidget(btn)
 
+        for w_group in writingGroups:
+            btn = QPushButton(f"Writing: {w_group}")
+            btn.clicked.connect(lambda _, g=w_group: self.load_writing(foldername, setname, g))
+            self.scroll_layout.addWidget(btn)
 
-        import_button = ctk.CTkButton(
-            self.footer,
-                text="Import File",
-                command=lambda:self.importTXT(foldername, 1),
-                height=40,
-                font=("Roboto", 15, "bold"),
-            )
-        import_button.grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        export_button = ctk.CTkButton(
-                self.footer,
-                text="Export File",
-                command=lambda:self.export_file(foldername,setname),
-                height=40,
-                font=("Roboto", 15, "bold"),
-            )
-        export_button.grid(row=0, column=1, sticky="w", padx=5, pady=5)
-    def load_cards(self, foldername, setname, groupname, reversed=0):
-        self.back_btn.configure(command=lambda: self.load_set(foldername,setname))
-        if(reversed):
-            print(f"Loading: {setname} cards reversed")
-            self.label.configure(text=f"{setname}: Cards Reversed")  
-        else:
-            print(f"Loading: {setname} cards")
-            self.label.configure(text=f"{setname}: Cards")
+        test_btn = QPushButton("Mixed Test Mode")
+        test_btn.clicked.connect(lambda: self.load_test(foldername, setname))
+        self.scroll_layout.addWidget(test_btn)
+
+        import_btn = QPushButton("Import File")
+        import_btn.clicked.connect(lambda: self.importTXT(foldername, 1))
+        self.footer_layout.addWidget(import_btn)
+
+        export_btn = QPushButton("Export File")
+        export_btn.clicked.connect(lambda: self.export_file(foldername, setname))
+        self.footer_layout.addWidget(export_btn)
+    def load_card(self, foldername, setname, groupname, index=0, flipped=0, reversed=0):
+        try:
+            self.back_btn.clicked.disconnect()
+        except TypeError:
+            pass
+        self.back_btn.clicked.connect(lambda: self.load_set(foldername, setname))
+
+        title_text = f"{groupname}: {'Reversed' if reversed else 'Standard'}"
+        self.label.setText(title_text)
+        print(f"Loading: {groupname} ({'reversed' if reversed else 'normal'})")
         self.delete_widgets()
 
         cardIDs = self.db.getCardIDsByGroup(foldername, setname, groupname)
 
-        if(len(cardIDs)==0):
-            label = ctk.CTkLabel(self.scroll_frame, text=f"No Cards in {foldername}/{setname}")
-            label.pack(anchor="w", padx=10, pady=2)
+        if not cardIDs:
+            empty_label = QLabel(f"No Cards in {foldername}/{setname}")
+            empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.scroll_layout.addWidget(empty_label)
+            return
 
-        
-        label = ctk.CTkLabel(self.scroll_frame, text=f"{self.db.getCardByID(cardIDs[0])}")
-        label.pack(anchor="w", padx=10, pady=2)
+        if(index >= len(cardIDs)):
+            display_label = QLabel("No More Cards")
+            display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.scroll_layout.addWidget(display_label)
+
+            fin_btn = QPushButton("Finish")
+            fin_btn.clicked.connect(lambda: self.load_set(foldername, setname))
+            self.footer_layout.addWidget(fin_btn)
+        else:
+            card = self.db.getCardByID(cardIDs[index])
+            
+            card_container = QFrame()
+            card_container.setMinimumHeight(400)
+            card_container.setObjectName("flashcard")
+            
+            card_inner_layout = QVBoxLayout(card_container)
+            
+            front_side = card['back'] if (reversed ^ flipped) else card['front']
+            
+            content_text = "\n".join([str(v) for v in front_side.values()])
+            
+            display_label = QLabel(content_text)
+            display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            display_label.setWordWrap(True)
+            
+            card_inner_layout.addWidget(display_label)
+            self.scroll_layout.addWidget(card_container)
+
+            flip_btn = QPushButton("Flip Card")
+            flip_btn.clicked.connect(lambda _, i=index, f=(not flipped): self.load_card(foldername, setname, groupname, i, f, reversed))
+            self.footer_layout.addWidget(flip_btn)
+
+            next_btn = QPushButton("Next →")
+            next_btn.clicked.connect(lambda _, i=(index+1), f=flipped: self.load_card(foldername, setname, groupname, i, f, reversed))
+            self.footer_layout.addWidget(next_btn)
     def load_writing(self, foldername, setname, groupname):
-        self.back_btn.configure(command=lambda: self.load_set(foldername,setname))
-        self.label.configure(text=f"{setname}: Writing")  
-        print(f"Loading: {setname} writing")
+        try:
+            self.back_btn.clicked.disconnect()
+        except TypeError:
+            pass
+        self.back_btn.clicked.connect(lambda: self.load_set(foldername, setname))
+        self.label.setText(f"{groupname}: Writing Mode")
+        print(f"Loading: {setname} writing group: {groupname}")
         self.delete_widgets()
 
         writingIDs = self.db.getWritingIDsByGroup(foldername, setname, groupname)
 
-        if(len(writingIDs)==0):
-            label = ctk.CTkLabel(self.scroll_frame, text=f"No Writing in {setname}")
-            label.pack(anchor="w", padx=10, pady=2)
+        if not writingIDs:
+            empty_label = QLabel(f"No Writing exercises in {groupname}")
+            empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.scroll_layout.addWidget(empty_label)
+            return
 
-        label = ctk.CTkLabel(self.scroll_frame, text=self.db.getWritingByID(writingIDs[0]))
-        label.pack(anchor="w", padx=10, pady=2)
+        writing_data = self.db.getWritingByID(writingIDs[0])
+
+        writing_container = QFrame()
+        writing_container.setFrameShape(QFrame.Shape.StyledPanel)
+        writing_container.setStyleSheet("background-color: #333; border-radius: 10px; padding: 20px;")
+        
+        writing_layout = QVBoxLayout(writing_container)
+
+        prompt_label = QLabel(f"Prompt:\n{writing_data['prompt']}")
+        prompt_label.setWordWrap(True)
+        prompt_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.answer_input = QLineEdit()
+        self.answer_input.setPlaceholderText("Type your answer here...")
+
+        writing_layout.addWidget(prompt_label)
+        writing_layout.addWidget(self.answer_input)
+        
+        self.scroll_layout.addWidget(writing_container)
+
+        check_btn = QPushButton("Check Answer")
+        
+        check_btn.clicked.connect(lambda: self.check_writing_answer(writing_data['write']))
+        
+        self.footer_layout.addWidget(check_btn)
+
+        next_btn = QPushButton("Next Exercise →")
+        self.footer_layout.addWidget(next_btn)
     def load_test(self, foldername, setname):
-        self.back_btn.configure(command=lambda: self.load_set(foldername,setname))
-        print(f"Loading: {setname} test")
+        try:
+            self.back_btn.clicked.disconnect()
+        except TypeError:
+            pass
+        self.back_btn.clicked.connect(lambda: self.load_set(foldername, setname))
+        self.label.setText(f"Test: {setname}")
         self.delete_widgets()
 
 WIDTH = 800
 HEIGHT = 600
 
+theme = {
+    "--black": "#1a1a1a",
+    "--mid-black": "#393939",
+    "--less-black": "#474747",
+    "--gray": "#737373",
+    "--white": "#f3f3f3"
+}
+
 if __name__ == "__main__":
-    app = App(WIDTH, HEIGHT)
-    app.mainloop()
+    app = QApplication(sys.argv)
+    try:
+        with open("style.qss", "r") as f:
+            style = f.read()
+            for var, value in theme.items():
+                style = style.replace(f"var({var})", value)
+            app.setStyleSheet(style)
+    except FileNotFoundError:
+        print("Style file not found, loading default styles.")
+
+    window = HRT(WIDTH, HEIGHT)
+    window.show()
+
+    sys.exit(app.exec())
