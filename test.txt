@@ -1,12 +1,21 @@
 
-set_name: test1
+set_name: test
 
-[cards]
+cards: words
 [[front]hanzi | [back]pinyin | [back]definition]
 学习 | xué xí | to study
 谢谢 | xiè xie |thank you
 
-[writing]
+cards: questions
+[[front]question | [back]answer]
+What's your name? | Dave
+
+writing: words
 [prompt | write]
     xué xí - to study | 学习
     xiè xie - thank you | 谢谢    
+
+writing: words2
+[prompt | write]
+    xué xí2 - to study2 | 学习2
+    xiè xie2 - thank you2 | 谢谢2   

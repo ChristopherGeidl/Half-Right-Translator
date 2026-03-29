@@ -181,19 +181,22 @@ class App(ctk.CTk):
         self.label.configure(text=f"{foldername}: {setname}")  
         self.delete_widgets()
 
-        if(self.db.isCardsInSet(foldername, setname)):
+        cardGroups = self.db.getCardGroupNames(foldername, setname)
+        writingGroups = self.db.getWritingGroupNames(foldername, setname)
+
+        for c in cardGroups:
             btn = ctk.CTkButton(
-                    self.scroll_frame, 
-                    text="Cards",
-                    command=lambda f=set: self.load_cards(foldername,setname),
-                    height=40,
-                )
+                self.scroll_frame, 
+                text=f"Cards: {c}",
+                command=lambda g=c: self.load_cards(foldername,setname,g),
+                height=40,
+            )
             btn.pack(fill="x", pady=5, padx=10)
-        if(self.db.isWritingInSet(foldername, setname)):
+        for w in writingGroups:
             btn = ctk.CTkButton(
                     self.scroll_frame, 
-                    text="Writing",
-                    command=lambda f=set: self.load_writing(foldername,setname),
+                    text=f"Writing: {w}",
+                    command=lambda g=w: self.load_writing(foldername,setname,g),
                     height=40,
                 )
             btn.pack(fill="x", pady=5, padx=10)
@@ -222,7 +225,7 @@ class App(ctk.CTk):
                 font=("Roboto", 15, "bold"),
             )
         export_button.grid(row=0, column=1, sticky="w", padx=5, pady=5)
-    def load_cards(self, foldername, setname, reversed=0):
+    def load_cards(self, foldername, setname, groupname, reversed=0):
         self.back_btn.configure(command=lambda: self.load_set(foldername,setname))
         if(reversed):
             print(f"Loading: {setname} cards reversed")
@@ -232,7 +235,7 @@ class App(ctk.CTk):
             self.label.configure(text=f"{setname}: Cards")
         self.delete_widgets()
 
-        cardIDs = self.db.getCardIDsInSet(foldername, setname)
+        cardIDs = self.db.getCardIDsByGroup(foldername, setname, groupname)
 
         if(len(cardIDs)==0):
             label = ctk.CTkLabel(self.scroll_frame, text=f"No Cards in {foldername}/{setname}")
@@ -241,13 +244,13 @@ class App(ctk.CTk):
         
         label = ctk.CTkLabel(self.scroll_frame, text=f"{self.db.getCardByID(cardIDs[0])}")
         label.pack(anchor="w", padx=10, pady=2)
-    def load_writing(self, foldername, setname):
+    def load_writing(self, foldername, setname, groupname):
         self.back_btn.configure(command=lambda: self.load_set(foldername,setname))
         self.label.configure(text=f"{setname}: Writing")  
         print(f"Loading: {setname} writing")
         self.delete_widgets()
 
-        writingIDs = self.db.getWritingIDsInSet(foldername, setname)
+        writingIDs = self.db.getWritingIDsByGroup(foldername, setname, groupname)
 
         if(len(writingIDs)==0):
             label = ctk.CTkLabel(self.scroll_frame, text=f"No Writing in {setname}")

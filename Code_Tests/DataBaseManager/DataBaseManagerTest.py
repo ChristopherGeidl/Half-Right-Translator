@@ -30,6 +30,7 @@ def test(text, folderName, testName, testNumber, expectedError=0):
         else:
             print(f"FAILED: {folderName} + {testName}  + {testNumber} had errors {e}")
 def testSet(folderName, testName):
+    #nameless cards and writing
     text = f"""
         set_name: {testName}
 
@@ -189,6 +190,158 @@ def testSet(folderName, testName):
         b1 | b2 | b3
         """
     test(text, folderName, testName, 18, 1)
+
+    #named cards and writing
+    text = f"""
+        set_name: {testName}
+
+        [cards]
+        [[back]pinyin | [front]hanzi | [back]definition | [front]extra front | [back] extra back]
+        xiè xie | 谢谢 | thank you | extra front | extra back
+        |  | | |
+        cards: name1
+        [[front]hanzi | [back]pinyin | [back]definition]
+        学习 | xué xí | to study
+        |  | 
+        [cards]
+        [[back]pinyin | [front]hanzi | [back]definition | [front]extra front | [back] extra back]
+        xiè xie | 谢谢 | thank you | extra front | extra back
+        |  | | |
+        cards: name1
+        [[front]hanzi | [back]pinyin | [back]definition]
+        学习 | xué xí | to study
+        |  | 
+        
+        [writing]
+        [prompt | write]
+        xué xí - to study | 学习
+        xué xí - to study | 学习
+
+        writing: name1
+        [write | prompt]
+        xué xí - to study | 学习
+        | 
+
+        cards: name2
+        [[back]pinyin | [front]hanzi | [back]definition | [front]extra front | [back] extra back]
+        xiè xie | 谢谢 | thank you | extra front | extra back
+        |  | | |
+
+        [writing]
+        [write | prompt]
+        谢谢 | xiè xie - thank you
+        """
+    test(text, folderName, testName, 19, 0)
+    text = f"""
+        set_name: {testName}
+
+        cards: name1
+        [[front]hanzi | [back]pinyin | [back]definition]
+
+        writing: name1
+        [prompt | write]
+
+        [writing]
+        [write | prompt]
+        """
+    test(text, folderName, testName, 20, 0)
+    text = f"""
+        set_name: {testName}
+
+        cards: name1
+        [[front]hanzi | [back]definition | [back]pinyin]
+        addedLater1 | addedLater2 | addedLater3
+        """
+    test(text, folderName, testName, 21, 0)
+    text = f"""
+        set_name: {testName}
+
+        auz: name1
+        cards: name1
+        [[front]hanzi | [back]definition | [back]pinyin]
+        a1 | a2 | a3
+        """
+    test(text, folderName, testName, 22, 0) #gets ignored
+    text = f"""
+        set_name: {testName}
+
+        cards: name1
+        [[front]hanzi | [back]definition | [back]pinyin
+        c1 | c2 | c3
+        """
+    test(text, folderName, testName, 23, 1)
+    text = f"""
+        set_name: {testName}
+
+        cards: name1
+        [[front]hanzi | [back]definition | pinyin]
+        d1 | d2 | d3
+        """
+    test(text, folderName, testName, 24, 1)
+    text = f"""
+        set_name: {testName}
+
+        cards: name1
+        [hanzi | [back]definition | [back]pinyin]
+        e1 | e2 | e3
+        """
+    test(text, folderName, testName, 25, 1)
+    text = f"""
+        set_name: {testName}
+
+        cards: name1
+        [[front]hanzi | [back]definition | [back]pinyin]
+        f1 | f2
+        """
+    test(text, folderName, testName, 26, 1)
+    text = f"""
+        set_name: {testName}
+
+        cards: name1
+        [[front]hanzi | [back]definition | [back]pinyin]
+        g1 | g2 | g3 | g4
+        """
+    test(text, folderName, testName, 27, 1)
+    text = f"""
+        set_name: {testName}
+
+        writing: name1
+        [prompt | write
+        b1 | b2  
+        """
+    test(text, folderName, testName, 27, 1)
+    text = f"""
+        set_name: {testName}
+
+        writing: name1
+        [prompt | ]
+        b1 | b2  
+        """
+    test(text, folderName, testName, 28, 1)
+    text = f"""
+        set_name: {testName}
+
+        writing: name1
+        [prompt | write | ]
+        b1 | b2  
+        """
+    test(text, folderName, testName, 29, 1)
+    text = f"""
+        set_name: {testName}
+
+        writing: name1
+        [prompt | write]
+        b1 | b2 |  
+        """
+    test(text, folderName, testName, 30, 1)
+    text = f"""
+        set_name: {testName}
+
+        writing: name1
+        [prompt | write]
+        b1 | b2 | b3
+        """
+    test(text, folderName, testName, 31, 1)
 
 testSet("Folder1", "test1")
 testSet("Folder1", "test2")

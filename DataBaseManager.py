@@ -10,8 +10,8 @@ class DataBaseManager:
         self.c = self.conn.cursor()
         
         self.c.execute('''CREATE TABLE IF NOT EXISTS folders 
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                  name TEXT UNIQUE)''')
+                    (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                    name TEXT UNIQUE)''')
 
         self.c.execute('''CREATE TABLE IF NOT EXISTS test_sets 
                     (id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -19,21 +19,25 @@ class DataBaseManager:
                     name TEXT UNIQUE, 
                     FOREIGN KEY(folder_id) REFERENCES folders(id))''')
     
+        # Updated Cards Table
         self.c.execute('''CREATE TABLE IF NOT EXISTS cards 
-             (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-              set_id INTEGER, 
-              front_data TEXT, 
-              back_data TEXT,
-              FOREIGN KEY(set_id) REFERENCES test_sets(id),
-              UNIQUE(set_id, front_data, back_data))''')
-        
+                    (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                    set_id INTEGER, 
+                    name TEXT,
+                    front_data TEXT, 
+                    back_data TEXT,
+                    FOREIGN KEY(set_id) REFERENCES test_sets(id),
+                    UNIQUE(set_id, name, front_data, back_data))''')
+
+        # Updated Writing Table
         self.c.execute('''CREATE TABLE IF NOT EXISTS writing 
                     (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                     set_id INTEGER, 
-                     prompt TEXT, 
-                     write TEXT,
-                     FOREIGN KEY(set_id) REFERENCES test_sets(id),
-                     UNIQUE(set_id, prompt, write))''')
+                    set_id INTEGER, 
+                    name TEXT,
+                    prompt TEXT, 
+                    write TEXT,
+                    FOREIGN KEY(set_id) REFERENCES test_sets(id),
+                    UNIQUE(set_id, name, prompt, write))''')
         self.conn.commit()
     def importTXT(self, txtFilePath, foldername):
         self.c.execute("INSERT OR IGNORE INTO folders (name) VALUES (?)", (foldername,))
@@ -46,8 +50,10 @@ class DataBaseManager:
         
         set_name= ""
         section = None
+        card_groupname = ""
         card_column_names = []
         card_column_side = [] # 0 = front , 1 = back
+        writing_groupname = ""
         writingOrder = 2 # 0 = prompt | write, 1 = write | prompt, 2 = uninitialized
 
         for line in lines:
@@ -63,6 +69,13 @@ class DataBaseManager:
                 section = "cards"
             elif(line.lower() == "[writing]"):
                 section = "writing"
+
+            elif(line.startswith("cards:")):
+                section = "cards"
+                card_groupname = line[6:].strip()
+            elif(line.startswith("writing:")):
+                section = "writing"
+                writing_groupname = line[8:].strip()
             
             elif(line.startswith("[") and line.endswith("]")):
                 cols = [c.strip() for c in line[1:-1].split("|")]
@@ -127,8 +140,9 @@ class DataBaseManager:
                         else:
                             back_map[card_column_names[i]] = parts[i]
 
-                    self.c.execute("INSERT OR IGNORE INTO cards (set_id, front_data, back_data) VALUES (?, ?, ?)",
-                        (set_id, 
+                    self.c.execute("INSERT OR IGNORE INTO cards (set_id, name, front_data, back_data) VALUES (?, ?, ?, ?)",
+                        (set_id,
+                         card_groupname,
                          json.dumps(front_map, ensure_ascii=False, sort_keys=True), 
                          json.dumps(back_map, ensure_ascii=False, sort_keys=True)))
                 elif(section == "writing"):
@@ -139,8 +153,8 @@ class DataBaseManager:
                     if(parts[0] == "" and parts[1] == ""): # empty
                         continue
                     (prompt,write) = (parts[0],parts[1]) if writingOrder == 0 else (parts[1],parts[0])
-                    self.c.execute("INSERT OR IGNORE INTO writing (set_id, prompt, write) VALUES (?, ?, ?)",
-                          (set_id, prompt, write))
+                    self.c.execute("INSERT OR IGNORE INTO writing (set_id, name, prompt, write) VALUES (?, ?, ?, ?)",
+                          (set_id, writing_groupname, prompt, write))
         
         if(set_name == ""):
             raise Exception("Invalid File Format Error: no set_name")
@@ -188,27 +202,45 @@ class DataBaseManager:
             """, (foldername, setname))
         count = self.c.fetchone()[0]
         return count > 0
-    def getCardIDsInSet(self, foldername, setname):
+    def getCardGroupNames(self, foldername, setname):
+        self.c.execute("""
+                SELECT DISTINCT cards.name 
+                FROM cards
+                JOIN test_sets ON cards.set_id = test_sets.id
+                JOIN folders ON test_sets.folder_id = folders.id
+                WHERE folders.name = ? AND test_sets.name = ?
+            """, (foldername, setname))
+        return [row[0] for row in self.c.fetchall() if row[0]]
+    def getWritingGroupNames(self, foldername, setname):
+        self.c.execute("""
+                SELECT DISTINCT writing.name 
+                FROM writing
+                JOIN test_sets ON writing.set_id = test_sets.id
+                JOIN folders ON test_sets.folder_id = folders.id
+                WHERE folders.name = ? AND test_sets.name = ?
+            """, (foldername, setname))
+        return [row[0] for row in self.c.fetchall() if row[0]]
+    def getCardIDsByGroup(self, foldername, setname, groupname):
         self.c.execute("""
             SELECT cards.id 
             FROM cards
             JOIN test_sets ON cards.set_id = test_sets.id
             JOIN folders ON test_sets.folder_id = folders.id
-            WHERE folders.name = ? AND test_sets.name = ?
-            """, (foldername, setname))
+            WHERE folders.name = ? AND test_sets.name = ? AND cards.name = ?
+            """, (foldername, setname, groupname))
         return [row[0] for row in self.c.fetchall()]
     def getCardByID(self, card_id):
         self.c.execute("SELECT front_data, back_data FROM cards WHERE id = ?", (card_id,))
         row = self.c.fetchone()
         return {"front": json.loads(row[0]), "back": json.loads(row[1])}
-    def getWritingIDsInSet(self, foldername, setname):
+    def getWritingIDsByGroup(self, foldername, setname, groupname):
         self.c.execute("""
             SELECT writing.id 
             FROM writing
             JOIN test_sets ON writing.set_id = test_sets.id
             JOIN folders ON test_sets.folder_id = folders.id
-            WHERE folders.name = ? AND test_sets.name = ?
-            """, (foldername, setname))
+            WHERE folders.name = ? AND test_sets.name = ? AND writing.name = ?
+            """, (foldername, setname, groupname))
         return [row[0] for row in self.c.fetchall()]
     def getWritingByID(self, writing_id):
         self.c.execute("SELECT prompt, write FROM writing WHERE id = ?", (writing_id,))

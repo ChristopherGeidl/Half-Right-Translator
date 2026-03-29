@@ -1,7 +1,7 @@
 
         set_name: test3
 
-        [writing]
+        writing: name1
         [prompt | write]
         b1 | b2 | b3
         
