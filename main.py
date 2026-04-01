@@ -1,4 +1,3 @@
-from reader import Reader
 import sys
 import os
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
@@ -7,7 +6,7 @@ from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, QH
 from PyQt6.QtCore import Qt
 from DataBaseManager import DataBaseManager
 from PyQt6.QtGui import QPainter, QPen, QImage, QColor
-from PyQt6.QtCore import QPoint
+from PyQt6.QtCore import QPoint, QRect
 import cv2
 import numpy as np
 
@@ -21,9 +20,38 @@ class DrawingCanvas(QWidget):
         self.image = QImage(self.size(), QImage.Format.Format_RGB32)
         self.image.fill(Qt.GlobalColor.white)
         self.current_thickness = 12
+        self.overlay_text = ""
+        self.show_overlay = False
+    def set_overlay(self, text, show=True):
+        self.overlay_text = text
+        self.show_overlay = show
+        self.update()
     def paintEvent(self, event):
         canvas_painter = QPainter(self)
         canvas_painter.drawImage(self.rect(), self.image, self.image.rect())
+
+        if self.show_overlay and self.overlay_text:
+            # Define the height of your background strip (e.g., 80 pixels)
+            overlay_height = 100
+            
+            # Create a rectangle at the bottom of the current widget
+            bottom_rect = QRect(0, self.height() - overlay_height, self.width(), overlay_height)
+            
+            # Draw the semi-transparent background "bar"
+            # (R, G, B, Alpha) -> 0,0,0,150 is a nice dark semi-transparent black
+            canvas_painter.fillRect(bottom_rect, QColor(0, 0, 0, 150))
+            
+            # Set up the font for the text
+            font = canvas_painter.font()
+            font.setPointSize(48) # Scale this to fit your overlay_height
+            font.setBold(True)
+            canvas_painter.setFont(font)
+            
+            # Set pen color to White so it pops against the dark background
+            canvas_painter.setPen(QColor(255, 255, 255, 255)) 
+            
+            # Draw the text centered within that specific bottom rectangle
+            canvas_painter.drawText(bottom_rect, Qt.AlignmentFlag.AlignCenter, self.overlay_text)
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.last_point = event.position().toPoint()
@@ -32,25 +60,21 @@ class DrawingCanvas(QWidget):
         if (event.buttons() & Qt.MouseButton.LeftButton) and self.drawing:
             new_point = event.position().toPoint()
             
-            # 1. Math: Calculate smooth thickness
             distance = (new_point - self.last_point).manhattanLength()
             target = max(10, min(18, 20 - distance))
             lerp_factor = 0.1 
             self.current_thickness += (target - self.current_thickness) * lerp_factor
     
-            # 2. Drawing: Use ONE painter
             painter = QPainter(self.image)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing)
             
-            # Use int() for the thickness to avoid type errors
             pen = QPen(Qt.GlobalColor.black, int(self.current_thickness), 
                        Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
             painter.setPen(pen)
             
             painter.drawLine(self.last_point, new_point)
-            
-            # 3. Cleanup
-            painter.end() # Explicitly end the painter (Good practice)
+
+            painter.end()
             self.last_point = new_point
             self.update()
     def mouseReleaseEvent(self, event):
@@ -64,13 +88,6 @@ class DrawingCanvas(QWidget):
             painter = QPainter(new_image)
             painter.drawImage(QPoint(0, 0), self.image)
             self.image = new_image
-    def downloadIMG(self, filename):
-        ptr = self.image.bits()
-        ptr.setsize(self.image.sizeInBytes())
-        arr = np.frombuffer(ptr, np.uint8).reshape(self.image.height(), self.image.width(), 4)
-        img_bgr = cv2.cvtColor(arr, cv2.COLOR_BGRA2BGR)
-        blurred_img = cv2.GaussianBlur(img_bgr, (3, 3), 0)
-        cv2.imwrite(filename, blurred_img)
     def clear(self):
         self.image.fill(Qt.GlobalColor.white)
         self.update()
@@ -80,7 +97,6 @@ class HRT(QMainWindow):
         super().__init__()
 
         self.db = DataBaseManager("HRT.db")
-        self.reader = Reader()
         self.setWindowTitle("Half Right Translator")
         self.resize(width, height)
 
@@ -305,7 +321,7 @@ class HRT(QMainWindow):
             btn.clicked.connect(lambda _, g=w_group: self.load_writing(foldername, setname, g))
             self.scroll_layout.addWidget(btn)
 
-        test_btn = QPushButton("Mixed Test Mode")
+        test_btn = QPushButton("Test All")
         test_btn.clicked.connect(lambda: self.load_test(foldername, setname))
         self.scroll_layout.addWidget(test_btn)
 
@@ -316,7 +332,7 @@ class HRT(QMainWindow):
         export_btn = QPushButton("Export File")
         export_btn.clicked.connect(lambda: self.export_file(foldername, setname))
         self.footer_layout.addWidget(export_btn)
-    def load_card(self, foldername, setname, groupname, index=0, flipped=0, reversed=0):
+    def load_card(self, foldername, setname, groupname, index=0, flipped=0, reversed=0, finish_function=None):
         try:
             self.back_btn.clicked.disconnect()
         except TypeError:
@@ -336,13 +352,18 @@ class HRT(QMainWindow):
             self.scroll_layout.addWidget(empty_label)
             return
 
+        if(index < 0):
+            index = 0
+        
         if(index >= len(cardIDs)):
-            display_label = QLabel("No More Cards")
+            if(finish_function == None):
+                finish_function = lambda f, s: self.load_set(f, s)
+            display_label = QLabel(f"No More Cards in {groupname}")
             display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.scroll_layout.addWidget(display_label)
 
             fin_btn = QPushButton("Finish")
-            fin_btn.clicked.connect(lambda: self.load_set(foldername, setname))
+            fin_btn.clicked.connect(lambda: finish_function(foldername, setname))
             self.footer_layout.addWidget(fin_btn)
         else:
             card = self.db.getCardByID(cardIDs[index])
@@ -364,14 +385,18 @@ class HRT(QMainWindow):
             card_inner_layout.addWidget(display_label)
             self.scroll_layout.addWidget(card_container)
 
+            next_btn = QPushButton("← Back")
+            next_btn.clicked.connect(lambda  _, i=(index-1), f=0: self.load_card(foldername, setname, groupname, i, f, reversed, finish_function))
+            self.footer_layout.addWidget(next_btn)
+
             flip_btn = QPushButton("Flip Card")
-            flip_btn.clicked.connect(lambda _, i=index, f=(not flipped): self.load_card(foldername, setname, groupname, i, f, reversed))
+            flip_btn.clicked.connect(lambda _, i=index, f=(not flipped): self.load_card(foldername, setname, groupname, i, f, reversed, finish_function))
             self.footer_layout.addWidget(flip_btn)
 
             next_btn = QPushButton("Next →")
-            next_btn.clicked.connect(lambda _, i=(index+1), f=flipped: self.load_card(foldername, setname, groupname, i, f, reversed))
+            next_btn.clicked.connect(lambda _, i=(index+1), f=flipped: self.load_card(foldername, setname, groupname, i, f, reversed, finish_function))
             self.footer_layout.addWidget(next_btn)
-    def load_writing(self, foldername, setname, groupname, index=0):
+    def load_writing(self, foldername, setname, groupname, index=0, checked=0, finish_function=None):
         try:
             self.back_btn.clicked.disconnect()
         except TypeError:
@@ -388,76 +413,63 @@ class HRT(QMainWindow):
             empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.scroll_layout.addWidget(empty_label)
             return
-
-        writing_data = self.db.getWritingByID(writingIDs[index])
-
-        writing_container = QFrame()
-        writing_container.setFrameShape(QFrame.Shape.StyledPanel)
         
-        writing_layout = QVBoxLayout(writing_container)
-
-        prompt_label = QLabel(f"{writing_data['prompt']}")
-        prompt_label.setWordWrap(True)
-        prompt_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        writing_layout.addWidget(prompt_label)
-
-        self.canvas = DrawingCanvas()
-        writing_layout.addWidget(self.canvas)
+        if(index < 0):
+            index = 0
         
-        self.scroll_layout.addWidget(writing_container)
+        if(index >= len(writingIDs)):
+            if(finish_function == None):
+                finish_function = lambda f, s: self.load_set(f, s)
+            
+            display_label = QLabel(f"No More Writings in {groupname}")
+            display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.scroll_layout.addWidget(display_label)
 
-        clear_btn = QPushButton("Clear")
-        clear_btn.clicked.connect(lambda: self.canvas.clear())
-        self.footer_layout.addWidget(clear_btn)
-
-        check_btn = QPushButton("Check Answer")
-        check_btn.clicked.connect(lambda: self.writing_result(foldername, setname, groupname, index, writing_data))
-        self.footer_layout.addWidget(check_btn)
-
-        next_btn = QPushButton("Next →")
-        next_btn.clicked.connect(lambda _, i=(index+1): self.load_writing(foldername, setname, groupname, i))
-        self.footer_layout.addWidget(next_btn)
-    def writing_result(self, foldername, setname, groupname, index, writing):
-        try:
-            self.back_btn.clicked.disconnect()
-        except TypeError:
-            pass
-        self.back_btn.clicked.connect(lambda: self.load_set(foldername, setname))
-        self.label.setText(f"{groupname}: Writing Mode")
-        print(f"Checking: {setname} writing group: {groupname}")
-        self.delete_widgets()
-
-        writing_container = QFrame()
-        writing_container.setFrameShape(QFrame.Shape.StyledPanel)
-        
-        writing_layout = QVBoxLayout(writing_container)
-
-        self.canvas.downloadIMG("writing.png")
-        is_correct, full_detected_text, avg_confidence = self.reader.verify_text("writing.png", writing['write'])
-
-
-        if(is_correct):
-            correct_label = QLabel("Correct")
+            fin_btn = QPushButton("Finish")
+            fin_btn.clicked.connect(lambda: finish_function(foldername, setname))
+            self.footer_layout.addWidget(fin_btn)
         else:
-            correct_label = QLabel("Incorrect")
-        correct_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        writing_layout.addWidget(correct_label)
+            writing_data = self.db.getWritingByID(writingIDs[index])
 
-        prompt_label = QLabel(f"Prompt: {writing['prompt']}\nYour Answer: {full_detected_text}\nCorrect Answer: {writing['write']}\n")
-        prompt_label.setWordWrap(True)
-        prompt_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        writing_layout.addWidget(prompt_label)
-        
-        self.scroll_layout.addWidget(writing_container)
+            writing_container = QFrame()
+            writing_container.setFrameShape(QFrame.Shape.StyledPanel)
+            
+            writing_layout = QVBoxLayout(writing_container)
 
-        retry_btn = QPushButton("Try Again")
-        retry_btn.clicked.connect(lambda: self.load_writing(foldername, setname, groupname, index))
-        self.footer_layout.addWidget(retry_btn)
+            prompt_label = QLabel(f"{writing_data['prompt']}")
+            prompt_label.setWordWrap(True)
+            prompt_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            writing_layout.addWidget(prompt_label)
 
-        next_btn = QPushButton("Next →")
-        next_btn.clicked.connect(lambda _, i=(index+1): self.load_writing(foldername, setname, groupname, i))
-        self.footer_layout.addWidget(next_btn)
-    def load_test(self, foldername, setname):
+            if(not checked):
+                self.canvas = DrawingCanvas()
+            else:
+                self.canvas.set_overlay(writing_data["write"], True)
+            writing_layout.addWidget(self.canvas)
+
+            self.scroll_layout.addWidget(writing_container)
+
+            next_btn = QPushButton("← Back")
+            next_btn.clicked.connect(lambda _, i=(index-1): self.load_writing(foldername, setname, groupname, i, 0, finish_function))
+            self.footer_layout.addWidget(next_btn)
+
+            if(not checked):
+                clear_btn = QPushButton("Clear")
+                clear_btn.clicked.connect(lambda: self.canvas.clear())
+                self.footer_layout.addWidget(clear_btn)
+
+                check_btn = QPushButton("Check Answer")
+                check_btn.clicked.connect(lambda _, i=index: self.load_writing(foldername, setname, groupname, i, 1, finish_function))
+                self.footer_layout.addWidget(check_btn)
+            else:
+                ta_btn = QPushButton("Try Again")
+                ta_btn.clicked.connect(lambda _, i=index: self.load_writing(foldername, setname, groupname, i, 0, finish_function))
+                self.footer_layout.addWidget(ta_btn)
+
+            next_btn = QPushButton("Next →")
+            next_btn.clicked.connect(lambda _, i=(index+1): self.load_writing(foldername, setname, groupname, i, 0, finish_function))
+            self.footer_layout.addWidget(next_btn)
+    def load_test(self, foldername, setname, group_index=0):
         try:
             self.back_btn.clicked.disconnect()
         except TypeError:
@@ -465,6 +477,29 @@ class HRT(QMainWindow):
         self.back_btn.clicked.connect(lambda: self.load_set(foldername, setname))
         self.label.setText(f"Test: {setname}")
         self.delete_widgets()
+
+        cardGroups = self.db.getCardGroupNames(foldername, setname)
+        writingGroups = self.db.getWritingGroupNames(foldername, setname)
+
+        numCardGroups = len(cardGroups)
+        numWritingGroups = len(writingGroups)
+
+        if(group_index < numCardGroups):
+            self.load_card(foldername, setname, cardGroups[group_index], finish_function=lambda f, s: self.load_test(f, s, group_index+1))
+        elif(group_index < (numCardGroups + numWritingGroups)):
+            i = group_index - numCardGroups
+            self.load_writing(foldername, setname, writingGroups[i], finish_function=lambda f, s: self.load_test(f, s, group_index+1))
+        else:
+            display_label = QLabel(f"Finished Test")
+            display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.scroll_layout.addWidget(display_label)
+
+            fin_btn = QPushButton("Finish")
+            fin_btn.clicked.connect(lambda: self.load_set(foldername, setname))
+            self.footer_layout.addWidget(fin_btn)
+
+
+
 
 WIDTH = 800
 HEIGHT = 600
