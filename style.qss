@@ -43,6 +43,8 @@ QPushButton:hover {
     width: 100%
 }
 
+/* --- load_set --- */
+
 /* ---    Cards    --- */
 #flashcard {
     border: 1px solid var(--gray);

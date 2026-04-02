@@ -1,5 +1,5 @@
 import sqlite3
-import random
+from datetime import datetime
 import json
 
 class DataBaseManager:
@@ -26,6 +26,9 @@ class DataBaseManager:
                     name TEXT,
                     front_data TEXT, 
                     back_data TEXT,
+                    type TEXT DEFAULT 'N',
+                    grade INT DEFAULT 0,
+                    last_studied DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY(set_id) REFERENCES test_sets(id),
                     UNIQUE(set_id, name, front_data, back_data))''')
 
@@ -36,9 +39,14 @@ class DataBaseManager:
                     name TEXT,
                     prompt TEXT, 
                     write TEXT,
+                    type TEXT DEFAULT 'N',
+                    grade INT DEFAULT 0,
+                    last_studied DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY(set_id) REFERENCES test_sets(id),
                     UNIQUE(set_id, name, prompt, write))''')
         self.conn.commit()
+
+        self.updateAllTypes()
     def importTXT(self, txtFilePath, foldername):
         self.c.execute("INSERT OR IGNORE INTO folders (name) VALUES (?)", (foldername,))
         self.c.execute("SELECT id FROM folders WHERE name = ?", (foldername,))
@@ -207,6 +215,21 @@ class DataBaseManager:
     def getFolders(self):
         self.c.execute("SELECT name FROM folders ORDER BY name ASC")
         return [row[0] for row in self.c.fetchall()]
+    def updateTableTypes(self, table):
+        today = datetime.now().strftime('%Y-%m-%d')
+        self.c.execute(f"""
+                UPDATE {table}
+                SET type = CASE 
+                    WHEN grade == 0 AND type = 'N' THEN 'N'
+                    WHEN grade <= 0 AND date(last_studied) != ? THEN 'L'
+                    WHEN grade > 0 AND date(last_studied) != ? THEN 'D'
+                    ELSE 'A'
+                END
+            """, (today, today))
+        self.conn.commit()
+    def updateAllTypes(self):
+        self.updateTableTypes("cards")
+        self.updateTableTypes("writing")
     def getSetsInFolder(self, foldername):
         try:
             self.c.execute("""
@@ -220,70 +243,73 @@ class DataBaseManager:
         except sqlite3.Error as e:
             print(f"Database error: {e}")
             return []
-    def isCardsInSet(self, foldername, setname):
-        self.c.execute("""
-            SELECT COUNT(cards.id) 
-            FROM cards
-            JOIN test_sets ON cards.set_id = test_sets.id
-            JOIN folders ON test_sets.folder_id = folders.id
-            WHERE folders.name = ? AND test_sets.name = ?
-            """, (foldername, setname))
-        count = self.c.fetchone()[0]
-        return count > 0
-    def isWritingInSet(self, foldername, setname):
-        self.c.execute("""
-            SELECT COUNT(writing.id) 
-            FROM writing
-            JOIN test_sets ON writing.set_id = test_sets.id
-            JOIN folders ON test_sets.folder_id = folders.id
-            WHERE folders.name = ? AND test_sets.name = ?
-            """, (foldername, setname))
-        count = self.c.fetchone()[0]
-        return count > 0
-    def getCardGroupNames(self, foldername, setname):
-        self.c.execute("""
-                SELECT DISTINCT cards.name 
-                FROM cards
-                JOIN test_sets ON cards.set_id = test_sets.id
+    def getTableGroupNames(self, foldername, setname, table):
+        self.c.execute(f"""
+                SELECT DISTINCT {table}.name 
+                FROM {table}
+                JOIN test_sets ON {table}.set_id = test_sets.id
                 JOIN folders ON test_sets.folder_id = folders.id
                 WHERE folders.name = ? AND test_sets.name = ?
             """, (foldername, setname))
         return [row[0] for row in self.c.fetchall() if row[0]]
-    def getWritingGroupNames(self, foldername, setname):
-        self.c.execute("""
-                SELECT DISTINCT writing.name 
-                FROM writing
-                JOIN test_sets ON writing.set_id = test_sets.id
+    def getTableGroupNumStudy(self, foldername, setname, groupname, table):
+        self.c.execute(f"""
+                SELECT 
+                    SUM(CASE WHEN {table}.type = 'N' THEN 1 ELSE 0 END) as New,
+                    SUM(CASE WHEN {table}.type = 'L' THEN 1 ELSE 0 END) as Learn,
+                    SUM(CASE WHEN {table}.type = 'D' THEN 1 ELSE 0 END) as Due,
+                    COUNT({table}.id) as Total
+                FROM {table}
+                JOIN test_sets ON {table}.set_id = test_sets.id
                 JOIN folders ON test_sets.folder_id = folders.id
-                WHERE folders.name = ? AND test_sets.name = ?
-            """, (foldername, setname))
-        return [row[0] for row in self.c.fetchall() if row[0]]
-    def getCardIDsByGroup(self, foldername, setname, groupname):
-        self.c.execute("""
-            SELECT cards.id 
-            FROM cards
-            JOIN test_sets ON cards.set_id = test_sets.id
-            JOIN folders ON test_sets.folder_id = folders.id
-            WHERE folders.name = ? AND test_sets.name = ? AND cards.name = ?
+                WHERE folders.name = ? 
+                AND test_sets.name = ? 
+                AND {table}.name = ?
+            """, (foldername, setname, groupname))
+        result = self.c.fetchone()
+
+        return [res if res is not None else 0 for res in result]
+    def getTableItemIDsByGroup(self, foldername, setname, groupname, table):
+        self.c.execute(f"""
+                SELECT {table}.id 
+                FROM {table}
+                JOIN test_sets ON {table}.set_id = test_sets.id
+                JOIN folders ON test_sets.folder_id = folders.id
+                WHERE folders.name = ? AND test_sets.name = ? AND {table}.name = ?
+                ORDER BY {table}.grade ASC, {table}.last_studied ASC
             """, (foldername, setname, groupname))
         return [row[0] for row in self.c.fetchall()]
-    def getCardByID(self, card_id):
-        self.c.execute("SELECT front_data, back_data FROM cards WHERE id = ?", (card_id,))
-        row = self.c.fetchone()
-        return {"front": json.loads(row[0]), "back": json.loads(row[1])}
-    def getWritingIDsByGroup(self, foldername, setname, groupname):
-        self.c.execute("""
-            SELECT writing.id 
-            FROM writing
-            JOIN test_sets ON writing.set_id = test_sets.id
+    def getTableItemIDsByType(self, foldername, setname, groupname, table, type):
+        self.c.execute(f"""
+            SELECT {table}.id 
+            FROM {table}
+            JOIN test_sets ON {table}.set_id = test_sets.id
             JOIN folders ON test_sets.folder_id = folders.id
-            WHERE folders.name = ? AND test_sets.name = ? AND writing.name = ?
-            """, (foldername, setname, groupname))
+            WHERE folders.name = ? AND test_sets.name = ? AND {table}.name = ? AND {table}.type = ?
+            """, (foldername, setname, groupname, type))
         return [row[0] for row in self.c.fetchall()]
-    def getWritingByID(self, writing_id):
-        self.c.execute("SELECT prompt, write FROM writing WHERE id = ?", (writing_id,))
-        row = self.c.fetchone()
-        return {"prompt": row[0], "write": row[1]}
+    def getTableItemByID(self, id, table):
+        if(table == "cards"):
+            self.c.execute(f"SELECT front_data, back_data FROM {table} WHERE id = ?", (id,))
+            row = self.c.fetchone()
+            return {"front": json.loads(row[0]), "back": json.loads(row[1])}
+        elif(table == "writing"):
+            self.c.execute(f"SELECT prompt, write FROM {table} WHERE id = ?", (id,))
+            row = self.c.fetchone()
+            return {"prompt": row[0], "write": row[1]}
+    def updateItemByID(self, table, id, grade_change):      
+        try:
+            self.c.execute(f"""
+                    UPDATE {table}
+                    SET 
+                        type = 'A',
+                        grade = MAX(-10, MIN(10, grade + ?)),
+                        last_studied = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (grade_change, id))
+            self.conn.commit()
+        except Exception as e:
+            print(f"Error updating {table} item {id}: {e}")
     def close(self):
         self.conn.close()
 
