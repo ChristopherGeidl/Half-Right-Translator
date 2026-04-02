@@ -1,96 +1,12 @@
 import sys
-import os
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QScrollArea, QFrame, QInputDialog,
                              QMessageBox, QFileDialog)
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QShortcut, QKeySequence
 from DataBaseManager import DataBaseManager
-from PyQt6.QtGui import QPainter, QPen, QImage, QColor
-from PyQt6.QtCore import QPoint, QRect
-import cv2
-import numpy as np
+from DrawingCanvas import DrawingCanvas
 
-class DrawingCanvas(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setAttribute(Qt.WidgetAttribute.WA_StaticContents)
-        self.drawing = False
-        self.setStyle(self.style())
-        self.last_point = QPoint()
-        self.image = QImage(self.size(), QImage.Format.Format_RGB32)
-        self.image.fill(Qt.GlobalColor.white)
-        self.current_thickness = 12
-        self.overlay_text = ""
-        self.show_overlay = False
-    def set_overlay(self, text, show=True):
-        self.overlay_text = text
-        self.show_overlay = show
-        self.update()
-    def paintEvent(self, event):
-        canvas_painter = QPainter(self)
-        canvas_painter.drawImage(self.rect(), self.image, self.image.rect())
-
-        if self.show_overlay and self.overlay_text:
-            # Define the height of your background strip (e.g., 80 pixels)
-            overlay_height = 100
-            
-            # Create a rectangle at the bottom of the current widget
-            bottom_rect = QRect(0, self.height() - overlay_height, self.width(), overlay_height)
-            
-            # Draw the semi-transparent background "bar"
-            # (R, G, B, Alpha) -> 0,0,0,150 is a nice dark semi-transparent black
-            canvas_painter.fillRect(bottom_rect, QColor(0, 0, 0, 150))
-            
-            # Set up the font for the text
-            font = canvas_painter.font()
-            font.setPointSize(48) # Scale this to fit your overlay_height
-            font.setBold(True)
-            canvas_painter.setFont(font)
-            
-            # Set pen color to White so it pops against the dark background
-            canvas_painter.setPen(QColor(255, 255, 255, 255)) 
-            
-            # Draw the text centered within that specific bottom rectangle
-            canvas_painter.drawText(bottom_rect, Qt.AlignmentFlag.AlignCenter, self.overlay_text)
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.last_point = event.position().toPoint()
-            self.drawing = True
-    def mouseMoveEvent(self, event):
-        if (event.buttons() & Qt.MouseButton.LeftButton) and self.drawing:
-            new_point = event.position().toPoint()
-            
-            distance = (new_point - self.last_point).manhattanLength()
-            target = max(10, min(18, 20 - distance))
-            lerp_factor = 0.1 
-            self.current_thickness += (target - self.current_thickness) * lerp_factor
-    
-            painter = QPainter(self.image)
-            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-            
-            pen = QPen(Qt.GlobalColor.black, int(self.current_thickness), 
-                       Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
-            painter.setPen(pen)
-            
-            painter.drawLine(self.last_point, new_point)
-
-            painter.end()
-            self.last_point = new_point
-            self.update()
-    def mouseReleaseEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.drawing = False
-    def resizeEvent(self, event):
-        # Handle window resizing so the drawing doesn't disappear
-        if self.width() > self.image.width() or self.height() > self.image.height():
-            new_image = QImage(self.size(), QImage.Format.Format_RGB32)
-            new_image.fill(Qt.GlobalColor.white)
-            painter = QPainter(new_image)
-            painter.drawImage(QPoint(0, 0), self.image)
-            self.image = new_image
-    def clear(self):
-        self.image.fill(Qt.GlobalColor.white)
-        self.update()
 
 class HRT(QMainWindow):
     def __init__(self, width, height):
@@ -151,6 +67,13 @@ class HRT(QMainWindow):
                     widget = item.widget()
                     if widget is not None:
                         widget.deleteLater()
+
+        for attr in ["flip_shortcut", "next_shortcut", "back_shortcut", "check_shortcut", "retry_shortcut"]:
+            if hasattr(self, attr):
+                shortcut = getattr(self, attr)
+                shortcut.setEnabled(False)
+                shortcut.deleteLater()
+                delattr(self, attr)
 
         clear_layout(self.scroll_layout)
         clear_layout(self.footer_layout)
@@ -354,6 +277,15 @@ class HRT(QMainWindow):
 
         if(index < 0):
             index = 0
+
+        # Left Arrow for Back
+        self.back_shortcut = QShortcut(QKeySequence("Left"), self)
+        self.back_shortcut.activated.connect(lambda i=(index-1): 
+            self.load_card(foldername, setname, groupname, i, 0, reversed, finish_function))
+
+        next_btn = QPushButton("← Back")
+        next_btn.clicked.connect(lambda  _, i=(index-1), f=0: self.load_card(foldername, setname, groupname, i, f, reversed, finish_function))
+        self.footer_layout.addWidget(next_btn)
         
         if(index >= len(cardIDs)):
             if(finish_function == None):
@@ -361,6 +293,10 @@ class HRT(QMainWindow):
             display_label = QLabel(f"No More Cards in {groupname}")
             display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.scroll_layout.addWidget(display_label)
+
+            # Right Arrow to Finish
+            self.next_shortcut = QShortcut(QKeySequence("Right"), self)
+            self.next_shortcut.activated.connect(lambda: finish_function(foldername, setname))
 
             fin_btn = QPushButton("Finish")
             fin_btn.clicked.connect(lambda: finish_function(foldername, setname))
@@ -385,9 +321,15 @@ class HRT(QMainWindow):
             card_inner_layout.addWidget(display_label)
             self.scroll_layout.addWidget(card_container)
 
-            next_btn = QPushButton("← Back")
-            next_btn.clicked.connect(lambda  _, i=(index-1), f=0: self.load_card(foldername, setname, groupname, i, f, reversed, finish_function))
-            self.footer_layout.addWidget(next_btn)
+            # Space to Flip
+            self.flip_shortcut = QShortcut(QKeySequence("Space"), self)
+            self.flip_shortcut.activated.connect(lambda i=index, f=(not flipped): 
+                self.load_card(foldername, setname, groupname, i, f, reversed, finish_function))
+
+            # Right Arrow for Next
+            self.next_shortcut = QShortcut(QKeySequence("Right"), self)
+            self.next_shortcut.activated.connect(lambda i=(index+1): 
+                self.load_card(foldername, setname, groupname, i, flipped, reversed, finish_function))
 
             flip_btn = QPushButton("Flip Card")
             flip_btn.clicked.connect(lambda _, i=index, f=(not flipped): self.load_card(foldername, setname, groupname, i, f, reversed, finish_function))
@@ -416,6 +358,15 @@ class HRT(QMainWindow):
         
         if(index < 0):
             index = 0
+
+        next_btn = QPushButton("← Back")
+        next_btn.clicked.connect(lambda _, i=(index-1): self.load_writing(foldername, setname, groupname, i, 0, finish_function))
+        self.footer_layout.addWidget(next_btn)
+
+        # Left Arrow for Back
+        self.back_shortcut = QShortcut(QKeySequence("Left"), self)
+        self.back_shortcut.activated.connect(lambda i=(index-1): 
+            self.load_writing(foldername, setname, groupname, i, 0, finish_function))
         
         if(index >= len(writingIDs)):
             if(finish_function == None):
@@ -424,6 +375,10 @@ class HRT(QMainWindow):
             display_label = QLabel(f"No More Writings in {groupname}")
             display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.scroll_layout.addWidget(display_label)
+
+            # Right Arrow to Finish
+            self.next_shortcut = QShortcut(QKeySequence("Right"), self)
+            self.next_shortcut.activated.connect(lambda: finish_function(foldername, setname))
 
             fin_btn = QPushButton("Finish")
             fin_btn.clicked.connect(lambda: finish_function(foldername, setname))
@@ -449,10 +404,6 @@ class HRT(QMainWindow):
 
             self.scroll_layout.addWidget(writing_container)
 
-            next_btn = QPushButton("← Back")
-            next_btn.clicked.connect(lambda _, i=(index-1): self.load_writing(foldername, setname, groupname, i, 0, finish_function))
-            self.footer_layout.addWidget(next_btn)
-
             if(not checked):
                 clear_btn = QPushButton("Clear")
                 clear_btn.clicked.connect(lambda: self.canvas.clear())
@@ -461,14 +412,28 @@ class HRT(QMainWindow):
                 check_btn = QPushButton("Check Answer")
                 check_btn.clicked.connect(lambda _, i=index: self.load_writing(foldername, setname, groupname, i, 1, finish_function))
                 self.footer_layout.addWidget(check_btn)
+
+                # Space to Check Answer
+                self.check_shortcut = QShortcut(QKeySequence("Space"), self)
+                self.check_shortcut.activated.connect(lambda i=index: 
+                    self.load_writing(foldername, setname, groupname, i, 1, finish_function))
             else:
                 ta_btn = QPushButton("Try Again")
                 ta_btn.clicked.connect(lambda _, i=index: self.load_writing(foldername, setname, groupname, i, 0, finish_function))
                 self.footer_layout.addWidget(ta_btn)
 
+                self.check_shortcut = QShortcut(QKeySequence("Space"), self)
+                self.check_shortcut.activated.connect(lambda i=index: 
+                    self.load_writing(foldername, setname, groupname, i, 0, finish_function))
+
             next_btn = QPushButton("Next →")
             next_btn.clicked.connect(lambda _, i=(index+1): self.load_writing(foldername, setname, groupname, i, 0, finish_function))
             self.footer_layout.addWidget(next_btn)
+
+            # Right Arrow for Next
+            self.next_shortcut = QShortcut(QKeySequence("Right"), self)
+            self.next_shortcut.activated.connect(lambda i=(index+1): 
+                self.load_writing(foldername, setname, groupname, i, 0, finish_function))
     def load_test(self, foldername, setname, group_index=0):
         try:
             self.back_btn.clicked.disconnect()
@@ -494,10 +459,12 @@ class HRT(QMainWindow):
             display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.scroll_layout.addWidget(display_label)
 
+            self.check_shortcut = QShortcut(QKeySequence("Right"), self)
+            self.check_shortcut.activated.connect(lambda: self.load_set(foldername, setname))
+
             fin_btn = QPushButton("Finish")
             fin_btn.clicked.connect(lambda: self.load_set(foldername, setname))
             self.footer_layout.addWidget(fin_btn)
-
 
 
 
