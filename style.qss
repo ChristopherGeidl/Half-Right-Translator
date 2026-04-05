@@ -33,6 +33,7 @@ QPushButton:hover {
 }
 #label {
     font-weight: bold;
+    margin-right: 46%;
 }
 #scroll {
     height: 80%;
@@ -44,6 +45,49 @@ QPushButton:hover {
 }
 
 /* --- load_set --- */
+#group_label {
+    font-weight: bold;
+}
+#group_label_type{
+
+}
+#group_label_name{
+
+}
+#group_load_new{
+    background-color: var(--black);
+    color: var(--light-blue);
+    text-decoration: underline;
+}
+#group_load_new:hover{
+    color: var(--lighter-blue);
+}
+#group_load_learn{
+    background-color: var(--black);
+    color: var(--light-red);
+    text-decoration: underline;
+}
+#group_load_learn:hover{
+    color: var(--lighter-red);
+}
+#group_load_due{
+    background-color: var(--black);
+    color: var(--light-green);
+    text-decoration: underline;
+}
+#group_load_due:hover{
+    color: var(--lighter-green);
+}
+#group_load_all{
+    background-color: var(--black);
+    text-decoration: underline;
+}
+#group_load_all:hover{
+    color: var(--gray);
+}
+#group_settings{
+
+}
 
 /* ---    Cards    --- */
 #flashcard {

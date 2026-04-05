@@ -44,10 +44,15 @@ class DrawingCanvas(QWidget):
     def mouseMoveEvent(self, event):
         if (event.buttons() & Qt.MouseButton.LeftButton) and self.drawing:
             new_point = event.position().toPoint()
+
+            dynamic_base = self.width() * 0.02
             
             distance = (new_point - self.last_point).manhattanLength()
-            target = max(10, min(18, 20 - distance))
-            lerp_factor = 0.1 
+            reference_speed = self.width() * 0.03 
+            speed_ratio = distance / reference_speed
+            thickness_mult = max(0.5, min(1.5, 1.5 - speed_ratio))
+            target = dynamic_base * thickness_mult
+            lerp_factor = 0.15 
             self.current_thickness += (target - self.current_thickness) * lerp_factor
     
             painter = QPainter(self.image)
@@ -66,13 +71,16 @@ class DrawingCanvas(QWidget):
         if event.button() == Qt.MouseButton.LeftButton:
             self.drawing = False
     def resizeEvent(self, event):
-        # Handle window resizing so the drawing doesn't disappear
-        if self.width() > self.image.width() or self.height() > self.image.height():
-            new_image = QImage(self.size(), QImage.Format.Format_RGB32)
-            new_image.fill(Qt.GlobalColor.white)
-            painter = QPainter(new_image)
-            painter.drawImage(QPoint(0, 0), self.image)
-            self.image = new_image
+        new_image = QImage(self.size(), QImage.Format.Format_RGB32)
+        new_image.fill(Qt.GlobalColor.white)
+        
+        painter = QPainter(new_image)
+        
+        painter.drawImage(self.rect(), self.image, self.image.rect())
+        painter.end()
+        
+        self.image = new_image
+        super().resizeEvent(event)
     def clear(self):
         self.image.fill(Qt.GlobalColor.white)
         self.update()

@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QScrollArea, QFrame, QInputDialog,
-                             QMessageBox, QFileDialog)
+                             QMessageBox, QFileDialog, QGridLayout)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QShortcut, QKeySequence
 from DataBaseManager import DataBaseManager
@@ -35,7 +35,7 @@ class HRT(QMainWindow):
         self.label.setObjectName("label")
 
         self.header_layout.addWidget(self.back_btn)
-        self.header_layout.addWidget(self.label, stretch=1) # Stretch=1 makes it take middle space
+        self.header_layout.addWidget(self.label)
         
         self.main_layout.addWidget(self.header)
 
@@ -64,9 +64,16 @@ class HRT(QMainWindow):
             if layout is not None:
                 while layout.count():
                     item = layout.takeAt(0)
+
                     widget = item.widget()
+                    child_layout = item.layout()
+
                     if widget is not None:
                         widget.deleteLater()
+
+                    elif child_layout is not None:
+                        clear_layout(child_layout)
+                        child_layout.deleteLater()
 
         for attr in ["flip_shortcut", "check_shortcut", "clear_shortcut", "finish_shortcut", "bad_shortcut", "alright_shortcut", "good_shortcut", "great_shortcut"]:
             if hasattr(self, attr):
@@ -234,102 +241,98 @@ class HRT(QMainWindow):
         cardGroups = self.db.getTableGroupNames(foldername, setname, "cards")
         writingGroups = self.db.getTableGroupNames(foldername, setname, "writing")
 
-        group = QFrame()
-        group_layout = QHBoxLayout(group)
-        group.setObjectName("group")
-        label = QLabel("Type")
-        label.setObjectName("group_label")
-        group_layout.addWidget(label)
-        label = QLabel("Name")
-        label.setObjectName("group_label")
-        group_layout.addWidget(label)
-        label = QLabel("New")
-        label.setObjectName("group_label")
-        group_layout.addWidget(label)
-        label = QLabel("Learn")
-        label.setObjectName("group_label")
-        group_layout.addWidget(label)
-        label = QLabel("Due")
-        label.setObjectName("group_label")
-        group_layout.addWidget(label)   
-        label = QLabel("All")
-        label.setObjectName("group_label")
-        group_layout.addWidget(label)     
-        self.scroll_layout.addWidget(group)
+        layout = QGridLayout()
+        layout.setHorizontalSpacing(12)
+        layout.setVerticalSpacing(6)
+
+        headers = ["Type", "Name", "New", "Learn", "Due", "All", ""]
+
+        for col, text in enumerate(headers):
+            label = QLabel(text)
+            label.setObjectName("group_label")
+            layout.addWidget(label, 0, col, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        layout.setColumnStretch(1, 2) # Name wider
+
+        row = 1
 
         for c_group in cardGroups:
             New, Learn, Due, All = self.db.getTableGroupNumStudy(foldername, setname, c_group, "cards")
             
-            group = QFrame()
-            group_layout = QHBoxLayout(group)
-            group.setObjectName("group")
-
-            type = QLabel("Cards")
-            type.setObjectName("group_label_type")
-            group_layout.addWidget(type)
+            type_label = QLabel("Cards")
+            type_label.setObjectName("group_label_type")
+            layout.addWidget(type_label, row, 0, alignment=Qt.AlignmentFlag.AlignCenter)
             
-            label = QLabel(c_group)
-            label.setObjectName("group_label_name")
-            group_layout.addWidget(label)
+            name_label = QLabel(c_group)
+            name_label.setObjectName("group_label_name")
+            layout.addWidget(name_label, row, 1, alignment=Qt.AlignmentFlag.AlignCenter)
             
             btn = QPushButton(f"{New}")
             btn.clicked.connect(lambda _, g=c_group: self.load_card(foldername, setname, g, type='N'))
-            self.header.setObjectName("group_load_new")
-            group_layout.addWidget(btn)
+            btn.setObjectName("group_load_new")
+            layout.addWidget(btn, row, 2, alignment=Qt.AlignmentFlag.AlignCenter)
 
             btn = QPushButton(f"{Learn}")
             btn.clicked.connect(lambda _, g=c_group: self.load_card(foldername, setname, g, type='L'))
-            self.header.setObjectName("group_load_learn")
-            group_layout.addWidget(btn)
+            btn.setObjectName("group_load_learn")
+            layout.addWidget(btn, row, 3, alignment=Qt.AlignmentFlag.AlignCenter)
 
             btn = QPushButton(f"{Due}")
             btn.clicked.connect(lambda _, g=c_group: self.load_card(foldername, setname, g, type='D'))
-            self.header.setObjectName("group_load_due")
-            group_layout.addWidget(btn)
+            btn.setObjectName("group_load_due")
+            layout.addWidget(btn, row, 4, alignment=Qt.AlignmentFlag.AlignCenter)
 
             btn = QPushButton(f"{All}")
             btn.clicked.connect(lambda _, g=c_group: self.load_card(foldername, setname, g, type='A'))
-            self.header.setObjectName("group_load_all")
-            group_layout.addWidget(btn)
+            btn.setObjectName("group_load_all")
+            layout.addWidget(btn, row, 5, alignment=Qt.AlignmentFlag.AlignCenter)
 
-            self.scroll_layout.addWidget(group)
+            btn = QPushButton("Settings")
+            btn.clicked.connect(lambda _, g=c_group: self.edit_items(foldername, setname, g, table="cards"))
+            btn.setObjectName("group_settings")
+            layout.addWidget(btn, row, 6, alignment=Qt.AlignmentFlag.AlignCenter)
+
+            row += 1
 
         for w_group in writingGroups:
             New, Learn, Due, All = self.db.getTableGroupNumStudy(foldername, setname, w_group, "writing")
-            
-            group = QFrame()
-            group_layout = QHBoxLayout(group)
-            group.setObjectName("group")
 
-            type = QLabel("Writing")
-            type.setObjectName("group_label_type")
-            group_layout.addWidget(type)
-            
-            label = QLabel(w_group)
-            label.setObjectName("group_label_name")
-            group_layout.addWidget(label)
+            type_label = QLabel("Writing")
+            type_label.setObjectName("group_label_type")
+            layout.addWidget(type_label, row, 0, alignment=Qt.AlignmentFlag.AlignCenter)
+
+            name_label = QLabel(w_group)
+            name_label.setObjectName("group_label_name")
+            layout.addWidget(name_label, row, 1, alignment=Qt.AlignmentFlag.AlignCenter)
             
             btn = QPushButton(f"{New}")
             btn.clicked.connect(lambda _, g=w_group: self.load_writing(foldername, setname, g, type='N'))
-            self.header.setObjectName("group_load_new")
-            group_layout.addWidget(btn)
+            btn.setObjectName("group_load_new")
+            layout.addWidget(btn, row, 2, alignment=Qt.AlignmentFlag.AlignCenter)
 
             btn = QPushButton(f"{Learn}")
             btn.clicked.connect(lambda _, g=w_group: self.load_writing(foldername, setname, g, type='L'))
-            self.header.setObjectName("group_load_learn")
-            group_layout.addWidget(btn)
+            btn.setObjectName("group_load_learn")
+            layout.addWidget(btn, row, 3, alignment=Qt.AlignmentFlag.AlignCenter)
 
             btn = QPushButton(f"{Due}")
             btn.clicked.connect(lambda _, g=w_group: self.load_writing(foldername, setname, g, type='D'))
-            self.header.setObjectName("group_load_due")
-            group_layout.addWidget(btn)
+            btn.setObjectName("group_load_due")
+            layout.addWidget(btn, row, 4, alignment=Qt.AlignmentFlag.AlignCenter)
 
             btn = QPushButton(f"{All}")
             btn.clicked.connect(lambda _, g=w_group: self.load_writing(foldername, setname, g, type='A'))
-            self.header.setObjectName("group_load_all")
-            group_layout.addWidget(btn)
+            btn.setObjectName("group_load_all")
+            layout.addWidget(btn, row, 5, alignment=Qt.AlignmentFlag.AlignCenter)
 
-            self.scroll_layout.addWidget(group)
+            btn = QPushButton("Settings")
+            btn.clicked.connect(lambda _, g=w_group: self.edit_items(foldername, setname, g, table="writing"))
+            btn.setObjectName("group_settings")
+            layout.addWidget(btn, row, 6, alignment=Qt.AlignmentFlag.AlignCenter)
+
+            row += 1
+        
+        self.scroll_layout.addLayout(layout)
 
         test_btn = QPushButton("Test All")
         test_btn.clicked.connect(lambda: self.load_test(foldername, setname))
@@ -395,7 +398,7 @@ class HRT(QMainWindow):
             display_label.setWordWrap(True)
             
             card_inner_layout.addWidget(display_label)
-            self.scroll_layout.addWidget(card_container)
+            self.scroll_layout.addWidget(card_container, stretch=1)
 
             if(flipped):
                 # 1 for Bad -2
@@ -492,7 +495,7 @@ class HRT(QMainWindow):
                 self.canvas = DrawingCanvas()
             else:
                 self.canvas.set_overlay(writing_data["write"], True)
-            writing_layout.addWidget(self.canvas)
+            writing_layout.addWidget(self.canvas, stretch=1)
 
             self.scroll_layout.addWidget(writing_container)
 
@@ -583,7 +586,6 @@ class HRT(QMainWindow):
             self.footer_layout.addWidget(fin_btn)
 
 
-
 WIDTH = 800
 HEIGHT = 600
 
@@ -592,7 +594,13 @@ theme = {
     "--mid-black": "#393939",
     "--less-black": "#474747",
     "--gray": "#737373",
-    "--white": "#f3f3f3"
+    "--white": "#f3f3f3",
+    "--light-blue": "#3292ff",
+    "--lighter-blue": "#a1c9f7",
+    "--light-green": "#37ff69",
+    "--lighter-green": "#b2fab4",
+    "--light-red": "#ff2b6b",
+    "--lighter-red": "#ffabab"
 }
 
 if __name__ == "__main__":
