@@ -2,7 +2,7 @@ import sys
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QScrollArea, QFrame, QInputDialog,
                              QMessageBox, QFileDialog, QGridLayout, QDialog, QFormLayout, 
-                             QLineEdit, QDialogButtonBox, QCheckBox)
+                             QLineEdit, QDialogButtonBox, QCheckBox, QSizePolicy)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QShortcut, QKeySequence
 from DataBaseManager import DataBaseManager
@@ -47,6 +47,7 @@ class HRT(QMainWindow):
         self.scroll.setLineWidth(2)
         
         self.scroll_content = QWidget()
+        self.scroll_content.setMinimumWidth(int(width * 0.97))
         self.scroll_layout = QVBoxLayout(self.scroll_content)
         self.scroll_layout.setAlignment(Qt.AlignmentFlag.AlignTop) # Buttons start at top
         
@@ -110,6 +111,19 @@ class HRT(QMainWindow):
         self.db.addFolder(foldername)
         self.refresh_folder_list()
     def refresh_folder_list(self):
+        def delete_folder(foldername):
+            reply = QMessageBox.question(
+                        self,
+                        "Delete Folder",
+                        f"Are you sure you want to delete {foldername} and all its contents?",
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                        QMessageBox.StandardButton.No # Default focus
+                    )
+            if reply == QMessageBox.StandardButton.No:
+                return
+            self.db.deleteFolder(foldername)
+            self.refresh_folder_list()
+        
         try:
             self.back_btn.clicked.disconnect()
         except TypeError:
@@ -121,19 +135,33 @@ class HRT(QMainWindow):
 
         folders = self.db.getFolders()
 
+        layout = QGridLayout()
+        layout.setColumnStretch(0, 5) # Name wider
+
         if not folders:
             no_folder_label = QLabel("No folders found")
             no_folder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.scroll_layout.addWidget(no_folder_label)
 
-        for folder in folders:
+        for i in range(len(folders)):
+            folder = folders[i]
             btn = QPushButton(folder)
-            btn.clicked.connect(lambda checked, f=folder: self.load_folder(f))
-            self.scroll_layout.addWidget(btn)
+            btn.setMinimumWidth(int(self.scroll_content.width() * 5.0/6.0))
+            btn.clicked.connect(lambda _, f=folder: self.load_folder(f))
+            layout.addWidget(btn, i, 0, alignment=Qt.AlignmentFlag.AlignCenter)
+
+            btn = QPushButton("Delete")
+            btn.clicked.connect(lambda _, f=folder: delete_folder(f))
+            layout.addWidget(btn, i, 1, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        container = QWidget()
+        container.setLayout(layout)
+        self.scroll_layout.addWidget(container)
 
         add_btn = QPushButton("+")
         add_btn.clicked.connect(self.addFolder)
-        self.scroll_layout.addWidget(add_btn)
+        add_btn.setFixedSize(100,40)
+        self.scroll_layout.addWidget(add_btn, alignment=Qt.AlignmentFlag.AlignCenter)
     def importTXT(self, foldername, overrideConsent=0, setname=""):
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -207,6 +235,19 @@ class HRT(QMainWindow):
                 f"Could not export file:\n{str(e)}"
             )
     def load_folder(self, foldername):
+        def delete_set(foldername, setname):
+            reply = QMessageBox.question(
+                        self,
+                        "Delete Set",
+                        f"Are you sure you want to delete {setname} and all its contents from {foldername}?",
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                        QMessageBox.StandardButton.No # Default focus
+                    )
+            if reply == QMessageBox.StandardButton.No:
+                return
+            self.db.deleteSetFromFolder(foldername, setname)
+            self.load_folder(foldername)
+
         try:
             self.back_btn.clicked.disconnect()
         except TypeError:
@@ -218,15 +259,28 @@ class HRT(QMainWindow):
 
         sets = self.db.getSetsInFolder(foldername)
 
+        layout = QGridLayout()
+        layout.setColumnStretch(0, 5) # Name wider
+
         if not sets:
             no_files_label = QLabel(f"No files found in {foldername}")
             no_files_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.scroll_layout.addWidget(no_files_label)
 
-        for setname in sets:
+        for i in range(len(sets)):
+            setname = sets[i]
             btn = QPushButton(setname)
+            btn.setMinimumWidth(int(self.scroll_content.width() * 5.0/6.0))
             btn.clicked.connect(lambda _, f=foldername, s=setname: self.load_set(f, s))
-            self.scroll_layout.addWidget(btn)
+            layout.addWidget(btn, i, 0, alignment=Qt.AlignmentFlag.AlignCenter)
+
+            btn = QPushButton("Delete")
+            btn.clicked.connect(lambda _, f=foldername, s=setname: delete_set(f, s))
+            layout.addWidget(btn, i, 1, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        container = QWidget()
+        container.setLayout(layout)
+        self.scroll_layout.addWidget(container)
 
         import_btn = QPushButton("Import TXT (+)")
         import_btn.clicked.connect(lambda: self.importTXT(foldername))
@@ -431,6 +485,9 @@ class HRT(QMainWindow):
         self.delete_widgets()
 
         New, Learn, Due, All = self.db.getTableGroupNumStudy(foldername, setname, groupname, table)
+
+        if(All == 0):
+            self.load_set(foldername, setname)
 
         if(index >= All):
             index = 0

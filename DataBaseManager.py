@@ -449,6 +449,51 @@ class DataBaseManager:
         writing_count = self.c.fetchone()[0]
 
         return cards_count + writing_count
+    def deleteSetFromFolder(self, foldername, setname):
+        self.c.execute("""
+                SELECT ts.id FROM test_sets ts
+                JOIN folders f ON ts.folder_id = f.id
+                WHERE ts.name = ? AND f.name = ?
+            """, (setname, foldername))
+        
+        result = self.c.fetchone()
+        if not result:
+            return
+        
+        set_id = result[0]
+
+        try:
+            self.c.execute("DELETE FROM cards WHERE set_id = ?", (set_id,))
+            self.c.execute("DELETE FROM writing WHERE set_id = ?", (set_id,))
+            self.c.execute("DELETE FROM test_sets WHERE id = ?", (set_id,))
+            self.conn.commit()            
+        except Exception as e:
+            self.conn.rollback()
+            print(f"Error during deletion: {e}")
+    def deleteFolder(self, foldername):
+        self.c.execute("SELECT id FROM folders WHERE name = ?", (foldername,))
+        folder_result = self.c.fetchone()
+        
+        if not folder_result:
+            return
+        
+        folder_id = folder_result[0]
+
+        try:
+            self.c.execute("SELECT id FROM test_sets WHERE folder_id = ?", (folder_id,))
+            set_ids = [row[0] for row in self.c.fetchall()]
+
+            if set_ids:
+                placeholders = ','.join(['?'] * len(set_ids))
+                self.c.execute(f"DELETE FROM cards WHERE set_id IN ({placeholders})", set_ids)
+                self.c.execute(f"DELETE FROM writing WHERE set_id IN ({placeholders})", set_ids)
+                self.c.execute(f"DELETE FROM test_sets WHERE folder_id = ?", (folder_id,))
+
+            self.c.execute("DELETE FROM folders WHERE id = ?", (folder_id,))
+            self.conn.commit()
+        except Exception as e:
+            self.conn.rollback()
+            print(f"Error deleting folder '{foldername}': {e}")
     def close(self):
         self.conn.close()
 
