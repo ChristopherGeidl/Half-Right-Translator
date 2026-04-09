@@ -1,7 +1,8 @@
 import sys
 from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QScrollArea, QFrame, QInputDialog,
-                             QMessageBox, QFileDialog, QGridLayout)
+                             QMessageBox, QFileDialog, QGridLayout, QDialog, QFormLayout, 
+                             QLineEdit, QDialogButtonBox, QCheckBox)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QShortcut, QKeySequence
 from DataBaseManager import DataBaseManager
@@ -75,7 +76,9 @@ class HRT(QMainWindow):
                         clear_layout(child_layout)
                         child_layout.deleteLater()
 
-        for attr in ["flip_shortcut", "check_shortcut", "clear_shortcut", "finish_shortcut", "bad_shortcut", "alright_shortcut", "good_shortcut", "great_shortcut"]:
+        for attr in ["flip_shortcut", "check_shortcut", "clear_shortcut", 
+                     "finish_shortcut", "bad_shortcut", "alright_shortcut", 
+                     "good_shortcut", "great_shortcut", "next_shortcut", "back_shortcut"]:
             if hasattr(self, attr):
                 shortcut = getattr(self, attr)
                 shortcut.setEnabled(False)
@@ -104,7 +107,6 @@ class HRT(QMainWindow):
             return
 
         self.db.addFolder(foldername)
-        print(f"Added folder: {foldername}")
         self.refresh_folder_list()
     def refresh_folder_list(self):
         try:
@@ -142,8 +144,6 @@ class HRT(QMainWindow):
         if not file_path:
             return  # user canceled
 
-        print(f"Importing: {file_path}")
-
         try:
             if not overrideConsent:
                 set_names = self.db.getSetsInFolder(foldername)
@@ -165,11 +165,9 @@ class HRT(QMainWindow):
                     )
 
                     if reply == QMessageBox.StandardButton.No:
-                        print("Import canceled by user.")
                         return
 
             self.db.importTXT(file_path, foldername)
-            print("Import successful!")
 
             self.load_folder(foldername)
             
@@ -288,7 +286,7 @@ class HRT(QMainWindow):
             layout.addWidget(btn, row, 5, alignment=Qt.AlignmentFlag.AlignCenter)
 
             btn = QPushButton("Settings")
-            btn.clicked.connect(lambda _, g=c_group: self.edit_items(foldername, setname, g, table="cards"))
+            btn.clicked.connect(lambda _, g=c_group: self.edit_settings(foldername, setname, g, "cards"))
             btn.setObjectName("group_settings")
             layout.addWidget(btn, row, 6, alignment=Qt.AlignmentFlag.AlignCenter)
 
@@ -326,7 +324,7 @@ class HRT(QMainWindow):
             layout.addWidget(btn, row, 5, alignment=Qt.AlignmentFlag.AlignCenter)
 
             btn = QPushButton("Settings")
-            btn.clicked.connect(lambda _, g=w_group: self.edit_items(foldername, setname, g, table="writing"))
+            btn.clicked.connect(lambda _, g=w_group: self.edit_settings(foldername, setname, g, "writing"))
             btn.setObjectName("group_settings")
             layout.addWidget(btn, row, 6, alignment=Qt.AlignmentFlag.AlignCenter)
 
@@ -345,19 +343,165 @@ class HRT(QMainWindow):
         export_btn = QPushButton("Export File")
         export_btn.clicked.connect(lambda: self.export_file(foldername, setname))
         self.footer_layout.addWidget(export_btn)
-    def next_card(self, foldername, setname, groupname, card_id, grade_change, type='A', index=0, flipped=0, reversed=0, finish_function=None):
+    def edit_settings(self, foldername, setname, groupname, table):
+        try:
+            self.back_btn.clicked.disconnect()
+        except TypeError:
+            pass
+        self.back_btn.clicked.connect(lambda: self.load_set(foldername, setname))
+        self.label.setText(f"Settings: {groupname}")
+        self.delete_widgets()
+
+        if(table == "cards"):
+            checkbox = QCheckBox("Reverse Cards: ")
+            if(self.db.isCardsReversed(foldername, setname, groupname)):
+                checkbox.setChecked(True)
+            else:
+                checkbox.setChecked(False)
+            checkbox.stateChanged.connect(lambda: self.db.reverseCards(foldername, setname, groupname))
+            self.scroll_layout.addWidget(checkbox)
+        else:
+            self.edit_items(foldername, setname, groupname, table)
+
+        btn = QPushButton("Edit Items")
+        btn.clicked.connect(lambda: self.edit_items(foldername, setname, groupname, table))
+        self.scroll_layout.addWidget(btn)
+    def edit_items(self, foldername, setname, groupname, table, index=0):
+        def edit(self, foldername, setname, groupname, table, item, index):
+            val1, val2 = item
+            if table == "cards":
+                label1, label2 = "Front", "Back"
+            else:
+                label1, label2 = "Prompt", "Write"
+
+            dialog = QDialog(self)
+            dialog.setWindowTitle(f"Edit {table.capitalize()}")
+            layout = QFormLayout(dialog)
+
+            line1 = QLineEdit(str(val1))
+            line2 = QLineEdit(str(val2))
+            layout.addRow(f"{label1}:", line1)
+            layout.addRow(f"{label2}:", line2)
+
+            buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+            buttons.accepted.connect(dialog.accept)
+            buttons.rejected.connect(dialog.reject)
+            layout.addRow(buttons)
+
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                new_x = line1.text().strip()
+                new_y = line2.text().strip()
+
+                if not new_x or not new_y:
+                    QMessageBox.warning(self, "Input Error", "Fields cannot be empty.")
+                    return
+                
+                if self.db.isItemInGroup(foldername, setname, groupname, table, (new_x,new_y)):
+                    QMessageBox.warning(self, "Duplicate Error", "Entered item already exists.")
+                    return
+
+                self.db.editItem(foldername, setname, groupname, table, item, (new_x,new_y))
+                self.edit_items(foldername, setname, groupname, table, index)
+        def delete_item(self, foldername, setname, groupname, table, item, index):
+            reply = QMessageBox.question(
+                        self,
+                        "Delete Item",
+                        f"{item[0]}\n{item[1]}\nAre you sure you want to delete this item?",
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                        QMessageBox.StandardButton.No # Default focus
+                    )
+            if reply == QMessageBox.StandardButton.No:
+                return
+            self.db.deleteItem(foldername, setname, groupname, table, item)
+            self.edit_items(foldername, setname, groupname, table, index)
+
+        try:
+            self.back_btn.clicked.disconnect()
+        except TypeError:
+            pass
+        self.back_btn.clicked.connect(lambda: self.edit_settings(foldername, setname, groupname, table))
+        self.label.setText(f"Item Settings: {groupname}")
+        self.delete_widgets()
+
+        New, Learn, Due, All = self.db.getTableGroupNumStudy(foldername, setname, groupname, table)
+
+        if(index >= All):
+            index = 0
+        if(index < 0):
+            index = All + index
+            index -= index % 10
+            index += 10
+
+        layout = QGridLayout()
+        layout.setHorizontalSpacing(12)
+        layout.setVerticalSpacing(6)
+
+        if(table == "cards"):
+            headers = ["Front", "Back", "", ""]
+        else:
+            headers = ["Prompt", "Write", "", ""]
+
+        for col, text in enumerate(headers):
+            label = QLabel(text)
+            label.setObjectName("group_label")
+            layout.addWidget(label, 0, col, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        layout.setColumnStretch(1, 2)
+        layout.setColumnStretch(2, 2)
+
+        items = self.db.getTenItemsInGroup(foldername, setname, groupname, table, index)
+
+        for i in range(len(items)):
+            label = QLabel(items[i][0])
+            label.setObjectName("group_label_first")
+            label.setWordWrap(False)
+            label.setMaximumWidth(int(self.scroll_content.width()/3))
+            layout.addWidget(label, i+1, 0, alignment=Qt.AlignmentFlag.AlignCenter)
+            
+            label = QLabel(items[i][1])
+            label.setObjectName("group_label_second")
+            label.setWordWrap(False)
+            label.setMaximumWidth(int(self.scroll_content.width()/3))
+            layout.addWidget(label, i+1, 1, alignment=Qt.AlignmentFlag.AlignCenter)
+            
+            edit_btn = QPushButton("Edit")
+            edit_btn.clicked.connect(lambda _,i=i, j=index: edit(self, foldername, setname, groupname, table, items[i], j))
+            layout.addWidget(edit_btn, i+1, 2, alignment=Qt.AlignmentFlag.AlignCenter)
+
+            del_btn = QPushButton("Delete")
+            del_btn.clicked.connect(lambda _,i=i, j=index: delete_item(self, foldername, setname, groupname, table, items[i], j))
+            layout.addWidget(del_btn, i+1, 3, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # left arrow for back
+        self.back_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Left), self)
+        self.back_shortcut.activated.connect(lambda i=(index-10): self.edit_items(foldername, setname, groupname, table, i))
+        # right arrow for next
+        self.next_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Right), self)
+        self.next_shortcut.activated.connect(lambda i=(index+10): self.edit_items(foldername, setname, groupname, table, i))
+
+        back_btn = QPushButton("← Back")
+        back_btn.clicked.connect(lambda _, i=(index-10): self.edit_items(foldername, setname, groupname, table, i))
+        self.footer_layout.addWidget(back_btn)
+
+        next_btn = QPushButton("Next →")
+        next_btn.clicked.connect(lambda _, i=(index+10): self.edit_items(foldername, setname, groupname, table, i))
+        self.footer_layout.addWidget(next_btn)
+
+        self.scroll_layout.addLayout(layout)
+    def next_card(self, foldername, setname, groupname, card_id, grade_change, type='A', index=0, flipped=0, finish_function=None):
         self.db.updateItemByID("cards", card_id, grade_change)
-        self.load_card(foldername, setname, groupname, type, index, flipped, reversed, finish_function)
-    def load_card(self, foldername, setname, groupname, type='A', index=0, flipped=0, reversed=0, finish_function=None):
+        self.load_card(foldername, setname, groupname, type, index, flipped, finish_function)
+    def load_card(self, foldername, setname, groupname, type='A', index=0, flipped=0, finish_function=None):
         try:
             self.back_btn.clicked.disconnect()
         except TypeError:
             pass
         self.back_btn.clicked.connect(lambda: self.load_set(foldername, setname))
 
+        reversed = self.db.isCardsReversed(foldername, setname, groupname)
+
         title_text = f"{groupname}: {'Reversed' if reversed else 'Standard'}"
         self.label.setText(title_text)
-        print(f"Loading: {groupname} ({'reversed' if reversed else 'normal'})")
         self.delete_widgets()
 
         if(type == 'A'):
@@ -404,44 +548,44 @@ class HRT(QMainWindow):
                 # 1 for Bad -2
                 self.bad_shortcut = QShortcut(QKeySequence("1"), self)
                 self.bad_shortcut.activated.connect(lambda i=(index+1): 
-                    self.next_card(foldername, setname, groupname, cardIDs[index], -2, type, i, 0, reversed, finish_function))
+                    self.next_card(foldername, setname, groupname, cardIDs[index], -2, type, i, 0, finish_function))
                 # 2 for Alright -1
                 self.alright_shortcut = QShortcut(QKeySequence("2"), self)
                 self.alright_shortcut.activated.connect(lambda i=(index+1): 
-                    self.next_card(foldername, setname, groupname, cardIDs[index], -1, type, i, 0, reversed, finish_function))
+                    self.next_card(foldername, setname, groupname, cardIDs[index], -1, type, i, 0, finish_function))
                 # 3 for Good +1
                 self.good_shortcut = QShortcut(QKeySequence("3"), self)
                 self.good_shortcut.activated.connect(lambda i=(index+1): 
-                    self.next_card(foldername, setname, groupname, cardIDs[index], 1, type, i, 0, reversed, finish_function))
+                    self.next_card(foldername, setname, groupname, cardIDs[index], 1, type, i, 0, finish_function))
                 # 4 for Great +2
                 self.great_shortcut = QShortcut(QKeySequence("4"), self)
                 self.great_shortcut.activated.connect(lambda i=(index+1): 
-                    self.next_card(foldername, setname, groupname, cardIDs[index], 2, type, i, 0, reversed, finish_function))
+                    self.next_card(foldername, setname, groupname, cardIDs[index], 2, type, i, 0, finish_function))
                 
                 btn = QPushButton("Bad -2")
                 btn.clicked.connect(lambda _, i=(index+1): 
-                    self.next_card(foldername, setname, groupname, cardIDs[index], -2, type, i, 0, reversed, finish_function))
+                    self.next_card(foldername, setname, groupname, cardIDs[index], -2, type, i, 0, finish_function))
                 self.footer_layout.addWidget(btn)
                 btn = QPushButton("Alright -1")
                 btn.clicked.connect(lambda _, i=(index+1): 
-                    self.next_card(foldername, setname, groupname, cardIDs[index], -1, type, i, 0, reversed, finish_function))
+                    self.next_card(foldername, setname, groupname, cardIDs[index], -1, type, i, 0, finish_function))
                 self.footer_layout.addWidget(btn)
                 btn = QPushButton("Good +1")
                 btn.clicked.connect(lambda _, i=(index+1): 
-                    self.next_card(foldername, setname, groupname, cardIDs[index], 1, type, i, 0, reversed, finish_function))
+                    self.next_card(foldername, setname, groupname, cardIDs[index], 1, type, i, 0, finish_function))
                 self.footer_layout.addWidget(btn)
                 btn = QPushButton("Great +2")
                 btn.clicked.connect(lambda _, i=(index+1): 
-                    self.next_card(foldername, setname, groupname, cardIDs[index], 2, type, i, 0, reversed, finish_function))
+                    self.next_card(foldername, setname, groupname, cardIDs[index], 2, type, i, 0, finish_function))
                 self.footer_layout.addWidget(btn)
             else:
                 # Space to flip
                 self.flip_shortcut = QShortcut(QKeySequence("Space"), self)
                 self.flip_shortcut.activated.connect(lambda i=index: 
-                    self.load_card(foldername, setname, groupname, type, i, 1, reversed, finish_function))
+                    self.load_card(foldername, setname, groupname, type, i, 1, finish_function))
                 btn = QPushButton("Flip")
                 btn.clicked.connect(lambda _, i=index: 
-                    self.load_card(foldername, setname, groupname, type, i, 1, reversed, finish_function))
+                    self.load_card(foldername, setname, groupname, type, i, 1, finish_function))
                 self.footer_layout.addWidget(btn)
     def next_writing(self, foldername, setname, groupname, writing_id, grade_change, type='A', index=0, checked=0, finish_function=None):
         self.db.updateItemByID("writing", writing_id, grade_change)
@@ -453,7 +597,6 @@ class HRT(QMainWindow):
             pass
         self.back_btn.clicked.connect(lambda: self.load_set(foldername, setname))
         self.label.setText(f"{groupname}: Writing Mode")
-        print(f"Loading: {setname} writing group: {groupname}")
         self.delete_widgets()
 
         if(type == 'A'):
@@ -587,7 +730,7 @@ class HRT(QMainWindow):
 
 
 WIDTH = 800
-HEIGHT = 600
+HEIGHT = 650
 
 theme = {
     "--black": "#1a1a1a",

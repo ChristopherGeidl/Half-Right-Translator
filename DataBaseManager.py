@@ -16,14 +16,15 @@ class DataBaseManager:
         self.c.execute('''CREATE TABLE IF NOT EXISTS test_sets 
                     (id INTEGER PRIMARY KEY AUTOINCREMENT, 
                     folder_id INTEGER,
-                    name TEXT UNIQUE, 
+                    name TEXT UNIQUE,
                     FOREIGN KEY(folder_id) REFERENCES folders(id))''')
     
         # Updated Cards Table
         self.c.execute('''CREATE TABLE IF NOT EXISTS cards 
                     (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                    set_id INTEGER, 
+                    set_id INTEGER,
                     name TEXT,
+                    reversed INTEGER DEFAULT 0,
                     front_data TEXT, 
                     back_data TEXT,
                     type TEXT DEFAULT 'N',
@@ -310,6 +311,114 @@ class DataBaseManager:
             self.conn.commit()
         except Exception as e:
             print(f"Error updating {table} item {id}: {e}")
+    def getTenItemsInGroup(self, foldername, setname, groupname, table, index):
+        content_col = "front_data" if table == "cards" else "prompt"
+
+        self.c.execute(f"""
+                SELECT {table}.* FROM {table}
+                JOIN test_sets ON {table}.set_id = test_sets.id
+                JOIN folders ON test_sets.folder_id = folders.id
+                WHERE folders.name = ? 
+                AND test_sets.name = ? 
+                AND {table}.name = ?
+                ORDER BY {table}.{content_col} ASC
+                LIMIT 10 OFFSET ?
+            """, (foldername, setname, groupname, index))
+        rows = self.c.fetchall()
+        for i in range(len(rows)):
+            rows[i] = (rows[i][3], rows[i][4])
+        return rows
+    def deleteItem(self, foldername, setname, groupname, table, item):
+        x= item[0]
+        y= item[1]
+
+        if table == "cards":
+            col_x, col_y = "front_data", "back_data"
+        else:
+            col_x, col_y = "prompt", "write"
+        
+        self.c.execute(f"""
+                DELETE FROM {table}
+                WHERE {col_x} = ? 
+                AND {col_y} = ? 
+                AND name = ?
+                AND set_id = (
+                    SELECT ts.id FROM test_sets ts
+                    JOIN folders f ON ts.folder_id = f.id
+                    WHERE f.name = ? AND ts.name = ?
+                )
+            """, (x, y, groupname, foldername, setname))
+        self.conn.commit()
+    def editItem(self, foldername, setname, groupname, table, original_item, new_item):
+        if table == "cards":
+            col_x, col_y = "front_data", "back_data"
+        else:
+            col_x, col_y = "prompt", "write"
+        
+        self.c.execute(f"""
+                UPDATE {table} 
+                SET {col_x} = ?, 
+                    {col_y} = ? 
+                WHERE {col_x} = ? 
+                AND {col_y} = ? 
+                AND name = ?
+                AND set_id = (
+                    SELECT ts.id FROM test_sets ts
+                    JOIN folders f ON ts.folder_id = f.id
+                    WHERE f.name = ? AND ts.name = ?
+                )
+            """, (
+                new_item[0], new_item[1],
+                original_item[0], original_item[1],
+                groupname,
+                foldername, setname
+            ))
+        self.conn.commit()
+    def isItemInGroup(self, foldername, setname, groupname, table, item):
+        val_x, val_y = item[0], item[1]
+        if table == "cards":
+            col_x, col_y = "front_data", "back_data"
+        else:
+            col_x, col_y = "prompt", "write"
+        
+        self.c.execute(f"""
+                SELECT 1 FROM {table}
+                JOIN test_sets ON {table}.set_id = test_sets.id
+                JOIN folders ON test_sets.folder_id = folders.id
+                WHERE folders.name = ? 
+                AND test_sets.name = ? 
+                AND {table}.name = ?
+                AND {table}.{col_x} = ? 
+                AND {table}.{col_y} = ?
+                LIMIT 1
+            """, (foldername, setname, groupname, val_x, val_y))
+        
+        return self.c.fetchone() is not None
+    def isCardsReversed(self, foldername, setname, groupname):
+        self.c.execute(f"""
+                SELECT cards.reversed 
+                FROM cards
+                JOIN test_sets ON cards.set_id = test_sets.id
+                JOIN folders ON test_sets.folder_id = folders.id
+                WHERE folders.name = ? AND test_sets.name = ? AND cards.name = ?
+                LIMIT 1
+            """, (foldername, setname, groupname))
+        
+        result = self.c.fetchone()
+        return result[0] if result else 0
+    def reverseCards(self, foldername, setname, groupname):
+        query = f"""
+                UPDATE cards 
+                SET reversed = 1 - reversed 
+                WHERE name = ? 
+                AND set_id = (
+                    SELECT ts.id FROM test_sets ts
+                    JOIN folders f ON ts.folder_id = f.id
+                    WHERE f.name = ? AND ts.name = ?
+                )
+            """
+        self.c.execute(query, (groupname, foldername, setname))
+        self.conn.commit()
     def close(self):
         self.conn.close()
 
