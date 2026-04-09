@@ -16,8 +16,9 @@ class DataBaseManager:
         self.c.execute('''CREATE TABLE IF NOT EXISTS test_sets 
                     (id INTEGER PRIMARY KEY AUTOINCREMENT, 
                     folder_id INTEGER,
-                    name TEXT UNIQUE,
-                    FOREIGN KEY(folder_id) REFERENCES folders(id))''')
+                    name TEXT,
+                    FOREIGN KEY(folder_id) REFERENCES folders(id)
+                    UNIQUE(folder_id, name))''')
     
         # Updated Cards Table
         self.c.execute('''CREATE TABLE IF NOT EXISTS cards 
@@ -48,7 +49,7 @@ class DataBaseManager:
         self.conn.commit()
 
         self.updateAllTypes()
-    def importTXT(self, txtFilePath, foldername):
+    def importTXT(self, txtFilePath, foldername, setname=""):
         self.c.execute("INSERT OR IGNORE INTO folders (name) VALUES (?)", (foldername,))
         self.c.execute("SELECT id FROM folders WHERE name = ?", (foldername,))
         folder_id = self.c.fetchone()[0]
@@ -57,7 +58,11 @@ class DataBaseManager:
         with open(txtFilePath, "r", encoding="utf-8") as f:
             lines = [line.strip() for line in f.read().splitlines() if line.strip()]
         
-        set_name= ""
+        set_name = setname #default "" otherwise forced to existing
+        if(set_name != ""):
+            self.c.execute("INSERT OR IGNORE INTO test_sets (name, folder_id) VALUES (?, ?)", (set_name, folder_id))
+            self.c.execute("SELECT id FROM test_sets WHERE name = ? AND folder_id = ?", (set_name, folder_id))
+            set_id = self.c.fetchone()[0]
         section = None
         card_groupname = ""
         card_column_names = []
@@ -66,12 +71,12 @@ class DataBaseManager:
         writingOrder = 2 # 0 = prompt | write, 1 = write | prompt, 2 = uninitialized
 
         for line in lines:
-            if(line.lower().startswith("set_name: ")):
+            if(line.lower().startswith("set_name: ") and setname == ""):
                 if(set_name != ""):
                     raise Exception(f"Invalid File Format Error: setname already declared: {line}")
                 set_name = line[10:].strip()
                 self.c.execute("INSERT OR IGNORE INTO test_sets (name, folder_id) VALUES (?, ?)", (set_name, folder_id))
-                self.c.execute("SELECT id FROM test_sets WHERE name = ?", (set_name,))
+                self.c.execute("SELECT id FROM test_sets WHERE name = ? AND folder_id = ?", (set_name, folder_id))
                 set_id = self.c.fetchone()[0]
 
             elif(line.lower() == "[cards]"):

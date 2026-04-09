@@ -116,7 +116,7 @@ class HRT(QMainWindow):
             pass
             
         self.back_btn.clicked.connect(self.refresh_folder_list)
-        self.label.setText("Select a Study Group")
+        self.label.setText("Select a Study Folder")
         self.delete_widgets()
 
         folders = self.db.getFolders()
@@ -134,7 +134,7 @@ class HRT(QMainWindow):
         add_btn = QPushButton("+")
         add_btn.clicked.connect(self.addFolder)
         self.scroll_layout.addWidget(add_btn)
-    def importTXT(self, foldername, overrideConsent=0):
+    def importTXT(self, foldername, overrideConsent=0, setname=""):
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Select TXT file",
@@ -168,9 +168,12 @@ class HRT(QMainWindow):
                     if reply == QMessageBox.StandardButton.No:
                         return
 
-            self.db.importTXT(file_path, foldername)
+            self.db.importTXT(file_path, foldername, setname)
 
-            self.load_folder(foldername)
+            if(setname == ""):
+                self.load_folder(foldername)
+            else:
+                self.load_set(foldername, setname)
             
         except Exception as e:
             print(f"Error importing file: {e}")
@@ -338,7 +341,7 @@ class HRT(QMainWindow):
         self.scroll_layout.addWidget(test_btn)
 
         import_btn = QPushButton("Import File")
-        import_btn.clicked.connect(lambda: self.importTXT(foldername, 1))
+        import_btn.clicked.connect(lambda: self.importTXT(foldername, overrideConsent=1, setname=setname))
         self.footer_layout.addWidget(import_btn)
 
         export_btn = QPushButton("Export File")
