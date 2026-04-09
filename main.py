@@ -10,6 +10,7 @@ from DrawingCanvas import DrawingCanvas
 
 
 class HRT(QMainWindow):
+    grade = 0
     def __init__(self, width, height):
         super().__init__()
 
@@ -353,7 +354,7 @@ class HRT(QMainWindow):
         self.delete_widgets()
 
         if(table == "cards"):
-            checkbox = QCheckBox("Reverse Cards: ")
+            checkbox = QCheckBox("Reverse Cards ")
             if(self.db.isCardsReversed(foldername, setname, groupname)):
                 checkbox.setChecked(True)
             else:
@@ -419,7 +420,10 @@ class HRT(QMainWindow):
             self.back_btn.clicked.disconnect()
         except TypeError:
             pass
-        self.back_btn.clicked.connect(lambda: self.edit_settings(foldername, setname, groupname, table))
+        if(table == "cards"):
+            self.back_btn.clicked.connect(lambda: self.edit_settings(foldername, setname, groupname, table))
+        else:
+            self.back_btn.clicked.connect(lambda: self.load_set(foldername, setname))
         self.label.setText(f"Item Settings: {groupname}")
         self.delete_widgets()
 
@@ -452,7 +456,7 @@ class HRT(QMainWindow):
         items = self.db.getTenItemsInGroup(foldername, setname, groupname, table, index)
 
         for i in range(len(items)):
-            label = QLabel(items[i][0])
+            label = QLabel(str(items[i][0]))
             label.setObjectName("group_label_first")
             label.setWordWrap(False)
             label.setMaximumWidth(int(self.scroll_content.width()/3))
@@ -489,6 +493,7 @@ class HRT(QMainWindow):
 
         self.scroll_layout.addLayout(layout)
     def next_card(self, foldername, setname, groupname, card_id, grade_change, type='A', index=0, flipped=0, finish_function=None):
+        self.grade += grade_change + 2 #for testing grade each out of 4
         self.db.updateItemByID("cards", card_id, grade_change)
         self.load_card(foldername, setname, groupname, type, index, flipped, finish_function)
     def load_card(self, foldername, setname, groupname, type='A', index=0, flipped=0, finish_function=None):
@@ -509,7 +514,6 @@ class HRT(QMainWindow):
         else:
             index = 0
             cardIDs = self.db.getTableItemIDsByType(foldername, setname, groupname, "cards", type)
-
         
         if(not cardIDs or index >= len(cardIDs)):
             if(finish_function == None):
@@ -588,6 +592,7 @@ class HRT(QMainWindow):
                     self.load_card(foldername, setname, groupname, type, i, 1, finish_function))
                 self.footer_layout.addWidget(btn)
     def next_writing(self, foldername, setname, groupname, writing_id, grade_change, type='A', index=0, checked=0, finish_function=None):
+        self.grade += grade_change + 2 #for testing grade eaech out of 4
         self.db.updateItemByID("writing", writing_id, grade_change)
         self.load_writing(foldername, setname, groupname, type, index, checked, finish_function)      
     def load_writing(self, foldername, setname, groupname, type='A', index=0, checked=0, finish_function=None):
@@ -703,6 +708,9 @@ class HRT(QMainWindow):
         self.label.setText(f"Test: {setname}")
         self.delete_widgets()
 
+        if(group_index == 0):
+            self.grade = 0
+
         cardGroups = self.db.getTableGroupNames(foldername, setname, "cards")
         writingGroups = self.db.getTableGroupNames(foldername, setname, "writing")
 
@@ -720,6 +728,14 @@ class HRT(QMainWindow):
             display_label = QLabel(f"Finished Test")
             display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.scroll_layout.addWidget(display_label)
+
+            num = self.db.getTotalNumberOfItemsInSet(foldername, setname)
+            percent = round((100.0*self.grade)/(4.0*num),1)
+
+            grade_label = QLabel(f"Grade: {percent} ({self.grade}/{4*num})")
+            grade_label.setObjectName("grade_label")
+            grade_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.scroll_layout.addWidget(grade_label)
 
             self.check_shortcut = QShortcut(QKeySequence("Space"), self)
             self.check_shortcut.activated.connect(lambda: self.load_set(foldername, setname))

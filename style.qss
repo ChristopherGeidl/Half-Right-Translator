@@ -105,3 +105,39 @@ QPushButton:hover {
 DrawingCanvas {
     min-height: 400px;
 }
+
+/* ---    Test    --- */
+#grade_label {
+    font-size: 32px;
+    font-weight: bold;
+    padding: 50px 0px 50px 0px
+}
+
+/* ---    Set Settings    --- */
+QCheckBox {
+    spacing: 8px;
+    color: var(--white);
+    padding: 10px 0px 10px 0px;
+}
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid var(--gray);
+}
+
+QCheckBox::indicator:unchecked {
+    background-color: var(--black);
+    border: 2px solid var(--gray);
+}
+QCheckBox::indicator:unchecked:hover {
+    border: 2px solid var(--light-red);
+}
+
+QCheckBox::indicator:checked {
+    background-color: var(--light-red);
+    border: 2px solid var(--light-red);
+}
+QCheckBox::indicator:checked:hover {
+    border: 2px solid var(--gray);
+}

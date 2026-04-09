@@ -325,8 +325,12 @@ class DataBaseManager:
                 LIMIT 10 OFFSET ?
             """, (foldername, setname, groupname, index))
         rows = self.c.fetchall()
-        for i in range(len(rows)):
-            rows[i] = (rows[i][3], rows[i][4])
+        if(table == "cards"):
+            for i in range(len(rows)):
+                rows[i] = (rows[i][4], rows[i][5])
+        else:
+            for i in range(len(rows)):
+                rows[i] = (rows[i][3], rows[i][4])
         return rows
     def deleteItem(self, foldername, setname, groupname, table, item):
         x= item[0]
@@ -419,6 +423,27 @@ class DataBaseManager:
             """
         self.c.execute(query, (groupname, foldername, setname))
         self.conn.commit()
+    def getTotalNumberOfItemsInSet(self, foldername, setname):
+        self.c.execute("""
+                SELECT ts.id 
+                FROM test_sets ts
+                JOIN folders f ON ts.folder_id = f.id
+                WHERE ts.name = ? AND f.name = ?
+            """, (setname, foldername))
+        
+        result = self.c.fetchone()
+        if not result:
+            return 0
+        
+        set_id = result[0]
+
+        self.c.execute("SELECT COUNT(*) FROM cards WHERE set_id = ?", (set_id,))
+        cards_count = self.c.fetchone()[0]
+
+        self.c.execute("SELECT COUNT(*) FROM writing WHERE set_id = ?", (set_id,))
+        writing_count = self.c.fetchone()[0]
+
+        return cards_count + writing_count
     def close(self):
         self.conn.close()
 
