@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, QH
                              QMessageBox, QFileDialog, QGridLayout, QDialog, QFormLayout, 
                              QLineEdit, QDialogButtonBox, QCheckBox, QSizePolicy)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QShortcut, QKeySequence, QPixmap
+from PyQt6.QtGui import QShortcut, QKeySequence, QPixmap, QIcon
 from DataBaseManager import DataBaseManager
 from DrawingCanvas import DrawingCanvas
 
@@ -16,6 +16,7 @@ class HRT(QMainWindow):
 
         self.db = DataBaseManager("HRT.db")
         self.setWindowTitle("Half Right Translator")
+        self.setWindowIcon(QIcon("pills.png"))
         self.resize(width, height)
 
         self.main_container = QWidget()
@@ -596,6 +597,9 @@ class HRT(QMainWindow):
             card_container.setObjectName("flashcard")
             
             card_inner_layout = QVBoxLayout(card_container)
+            card_inner_layout.setSpacing(2)
+            card_inner_layout.setContentsMargins(5, 5, 5, 5)
+            card_inner_layout.addStretch(1)
             
             front_side = card['back'] if (reversed ^ flipped) else card['front']
 
@@ -611,13 +615,15 @@ class HRT(QMainWindow):
                     )
                     label.setPixmap(scaled_img)
                     label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    label.setContentsMargins(0, 0, 0, 0)
                     card_inner_layout.addWidget(label)
                 else:
                     display_label = QLabel(str(v))
                     display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                     display_label.setWordWrap(True)
+                    display_label.setContentsMargins(0, 0, 0, 0)
                     card_inner_layout.addWidget(display_label)
-            
+            card_inner_layout.addStretch(1)
             self.scroll_layout.addWidget(card_container, stretch=1)
 
             if(flipped):
