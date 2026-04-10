@@ -16,7 +16,7 @@ class HRT(QMainWindow):
 
         self.db = DataBaseManager("HRT.db")
         self.setWindowTitle("Half Right Translator")
-        self.setWindowIcon(QIcon("pills.png"))
+        self.setWindowIcon(QIcon("pills.ico"))
         self.resize(width, height)
 
         self.main_container = QWidget()
