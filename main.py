@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (QMainWindow, QApplication, QWidget, QVBoxLayout, QH
                              QMessageBox, QFileDialog, QGridLayout, QDialog, QFormLayout, 
                              QLineEdit, QDialogButtonBox, QCheckBox, QSizePolicy)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QShortcut, QKeySequence
+from PyQt6.QtGui import QShortcut, QKeySequence, QPixmap
 from DataBaseManager import DataBaseManager
 from DrawingCanvas import DrawingCanvas
 
@@ -598,14 +598,26 @@ class HRT(QMainWindow):
             card_inner_layout = QVBoxLayout(card_container)
             
             front_side = card['back'] if (reversed ^ flipped) else card['front']
+
+            for v in front_side.values():
+                if(v.startswith("[img:")):
+                    label = QLabel()
+                    img = QPixmap(v[5:-1])
+                    scaled_img = img.scaled(
+                        200,#max width
+                        200,#max height
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation
+                    )
+                    label.setPixmap(scaled_img)
+                    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    card_inner_layout.addWidget(label)
+                else:
+                    display_label = QLabel(str(v))
+                    display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    display_label.setWordWrap(True)
+                    card_inner_layout.addWidget(display_label)
             
-            content_text = "\n".join([str(v) for v in front_side.values()])
-            
-            display_label = QLabel(content_text)
-            display_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            display_label.setWordWrap(True)
-            
-            card_inner_layout.addWidget(display_label)
             self.scroll_layout.addWidget(card_container, stretch=1)
 
             if(flipped):

@@ -33,6 +33,7 @@ ENV/
 # Database
 *.db
 *.sqlite3
+Images/
 
 # UI Layouts / Resource files (Optional)
 # If you use Qt Designer, you might want to keep .ui but ignore generated .py

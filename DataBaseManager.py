@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from datetime import datetime
 import json
@@ -91,7 +92,7 @@ class DataBaseManager:
                 section = "writing"
                 writing_groupname = line[8:].strip()
             
-            elif(line.startswith("[") and line.endswith("]")):
+            elif(line.startswith("[") and line.endswith("]") and (not line.startswith("[img:"))):
                 cols = [c.strip() for c in line[1:-1].split("|")]
                 if(section == "cards"):
                     card_column_names = []
@@ -149,10 +150,19 @@ class DataBaseManager:
                     front_map = {}
                     back_map = {}
                     for i in range(len(card_column_names)):
+                        part = parts[i]
+                        if(part.startswith("[img:") and part.endswith("]")):
+                            img_path = txtFilePath[:txtFilePath.rfind("/")] + "/" + part[5:-1]
+                            save_path = "Images/" + part[part.rfind("/")+1:-1]
+                            if(not os.path.exists(save_path)):
+                                with open(img_path, "rb") as src, open(save_path, "wb") as dst:
+                                    dst.write(src.read())
+                            part = f"[img:{save_path}]"
+                        
                         if card_column_side[i] == 0:
-                            front_map[card_column_names[i]] = parts[i]
+                            front_map[card_column_names[i]] = part
                         else:
-                            back_map[card_column_names[i]] = parts[i]
+                            back_map[card_column_names[i]] = part  
 
                     self.c.execute("INSERT OR IGNORE INTO cards (set_id, name, front_data, back_data) VALUES (?, ?, ?, ?)",
                         (set_id,
@@ -282,7 +292,6 @@ class DataBaseManager:
                 JOIN test_sets ON {table}.set_id = test_sets.id
                 JOIN folders ON test_sets.folder_id = folders.id
                 WHERE folders.name = ? AND test_sets.name = ? AND {table}.name = ?
-                ORDER BY {table}.grade ASC, {table}.last_studied ASC
             """, (foldername, setname, groupname))
         return [row[0] for row in self.c.fetchall()]
     def getTableItemIDsByType(self, foldername, setname, groupname, table, type):
@@ -358,6 +367,8 @@ class DataBaseManager:
                 )
             """, (x, y, groupname, foldername, setname))
         self.conn.commit()
+
+        self.checkDeleteImages()
     def editItem(self, foldername, setname, groupname, table, original_item, new_item):
         if table == "cards":
             col_x, col_y = "front_data", "back_data"
@@ -383,6 +394,8 @@ class DataBaseManager:
                 foldername, setname
             ))
         self.conn.commit()
+
+        self.checkDeleteImages()
     def isItemInGroup(self, foldername, setname, groupname, table, item):
         val_x, val_y = item[0], item[1]
         if table == "cards":
@@ -470,6 +483,8 @@ class DataBaseManager:
         except Exception as e:
             self.conn.rollback()
             print(f"Error during deletion: {e}")
+        
+        self.checkDeleteImages()
     def deleteFolder(self, foldername):
         self.c.execute("SELECT id FROM folders WHERE name = ?", (foldername,))
         folder_result = self.c.fetchone()
@@ -494,6 +509,24 @@ class DataBaseManager:
         except Exception as e:
             self.conn.rollback()
             print(f"Error deleting folder '{foldername}': {e}")
+        
+        self.checkDeleteImages()
+    def checkDeleteImages(self):
+        all_files = os.listdir("Images")
+
+        for filename in all_files:
+            file_path_in_db = f"Images/{filename}"
+            
+            self.c.execute("""
+                    SELECT COUNT(*) FROM cards 
+                    WHERE front_data LIKE ? 
+                    OR back_data LIKE ?
+                """, (f"%[img:{file_path_in_db}]%", f"%[img:{file_path_in_db}]%"))
+            
+            count = self.c.fetchone()[0]
+
+            if count == 0:
+                os.remove(f"Images/{filename}")
     def close(self):
         self.conn.close()
 
